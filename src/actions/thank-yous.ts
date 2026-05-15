@@ -1,7 +1,6 @@
 'use server';
 
 import {
-  getThankYouList,
   insertThankYou,
   type ThankYou,
 } from '@/lib/queries/thank-yous';
@@ -35,10 +34,6 @@ function validateThankYouInput(
   };
 }
 
-export async function fetchThankYouList(): Promise<ThankYou[]> {
-  return getThankYouList();
-}
-
 export async function createThankYou(
   from_id: string,
   to_id: string,
@@ -59,6 +54,6 @@ export async function createThankYou(
 
     return { error: null, data };
   } catch (error) {
-    return { error: '감사 메시지 저장에 실패했습니다. 다시 시도해 주세요.', data: undefined };
+    return { error: '감사 메시지 저장에 실패했습니다. 다시 시도해 주세요.' };
   }
 }
