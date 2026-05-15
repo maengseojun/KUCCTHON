@@ -31,8 +31,8 @@ function validateThankYouInput(
   };
 }
 
-export async function fetchThankYouList(): Promise<ThankYou[]> {
-  const thankYous = await getThankYouList();
+export async function fetchThankYouList(from_id: string): Promise<ThankYou[]> {
+  const thankYous = await getThankYouList(from_id);
 
   return thankYous;
 }

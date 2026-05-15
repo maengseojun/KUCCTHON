@@ -6,45 +6,29 @@ const supabase = createClient(
 );
 
 export interface ThankYou {
+  id: string;
   from_id: string;
   to_id: string;
-  created_at: string;
   content: string;
+  date: string;
+  created_at: string;
 }
-/*
-export async function getThankYouList(): Promise<ThankYou[]> {
+
+export async function getThankYouList(from_id: string): Promise<ThankYou[]> {
   try {
     const { data, error } = await supabase
       .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
+      .select('id, from_id, to_id, content, date, created_at')
+      .eq('from_id', from_id)
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new Error(`Failed to fetch thank you list: ${error.message}`);
+      throw new Error(`Failed to fetch thank you list for from_id=${from_id}: ${error.message}`);
     }
 
     return data || [];
   } catch (error) {
-    console.error('Error fetching thank you list:', error);
-    throw error;
-  }
-}
-*/
-
-export async function getThankYouList(): Promise<ThankYou[]> {
-  try {
-    const { data, error } = await supabase
-      .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to fetch thank you list: ${error.message}`);
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching thank you list:', error);
+    console.error('Error fetching thank you list by from_id:', error);
     throw error;
   }
 }
@@ -55,14 +39,16 @@ export async function insertThankYou(
   content: string
 ): Promise<ThankYou> {
   try {
+    const today = new Date().toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from('thank-yous')
       .insert({
         from_id,
         to_id,
         content,
+        date: today,
       })
-      .select('from_id, to_id, created_at, content')
+      .select('id, from_id, to_id, content, date, created_at')
       .single();
 
     if (error) {
@@ -77,20 +63,5 @@ export async function insertThankYou(
 }
 
 export async function getThankYousByFromId(from_id: string): Promise<ThankYou[]> {
-  try {
-    const { data, error } = await supabase
-      .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
-      .eq('from_id', from_id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to fetch thank yous for from_id=${from_id}: ${error.message}`);
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching thank yous by from_id:', error);
-    throw error;
-  }
+  return getThankYouList(from_id);
 }

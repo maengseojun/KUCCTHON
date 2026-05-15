@@ -1,14 +1,26 @@
 'use client';
 
-import { useState, type TouchEvent } from 'react';
+import { useEffect, useState, type TouchEvent } from 'react';
 import Link from 'next/link';
 import { BottomNav } from '@/components/nav/bottom-nav';
 
-// Mock data – will be replaced with real Supabase queries later
-const mockEntries: Record<
-  string,
-  { id: number; text: string; isAnniversary?: boolean; targetName?: string }[]
-> = {
+type Entry = {
+  id: string | number;
+  text: string;
+  isAnniversary?: boolean;
+  targetName?: string;
+};
+
+type ThankYouRow = {
+  id: string;
+  content: string;
+  date: string;
+  created_at: string;
+  from_id: string;
+  to_id: string;
+};
+
+const mockEntries: Record<string, Entry[]> = {
   '2026-5-3': [{ id: 1, text: '오랜만에 만난 친구가 커피를 사주었다.' }],
   '2026-5-5': [
     { id: 2, text: '어린이날 기념으로 동생과 재미있게 놀았다.' },
@@ -27,14 +39,53 @@ const mockEntries: Record<
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const GRID_SIZE = 42; // 7 × 6
 
+function toDateKey(dateString: string) {
+  const date = new Date(dateString);
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function normalizeThankYous(thankYous: ThankYouRow[]) {
+  return thankYous.reduce<Record<string, Entry[]>>((acc, thankYou) => {
+    const key = toDateKey(thankYou.date || thankYou.created_at);
+    const entry: Entry = {
+      id: thankYou.id,
+      text: thankYou.content,
+    };
+
+    acc[key] = acc[key] ? [...acc[key], entry] : [entry];
+    return acc;
+  }, {});
+}
+
 export default function WritePage() {
   const now = new Date();
   const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [entriesByDate, setEntriesByDate] = useState<Record<string, Entry[]>>(mockEntries);
 
   const year = baseDate.getFullYear();
   const month = baseDate.getMonth(); // 0-indexed
+
+  useEffect(() => {
+    async function loadThankYous() {
+      try {
+        const response = await fetch('/api/thank-yous');
+        if (!response.ok) {
+          console.error('감사 메시지를 불러오는 데 실패했습니다.', response.statusText);
+          return;
+        }
+
+        const thankYous = (await response.json()) as ThankYouRow[];
+        const normalized = normalizeThankYous(thankYous);
+        setEntriesByDate((prev) => ({ ...prev, ...normalized }));
+      } catch (error) {
+        console.error('감사 메시지를 불러오는 중 오류가 발생했습니다.', error);
+      }
+    }
+
+    loadThankYous();
+  }, []);
 
   const prevMonth = () => setBaseDate(new Date(year, month - 1, 1));
   const nextMonth = () => setBaseDate(new Date(year, month + 1, 1));
@@ -69,13 +120,13 @@ export default function WritePage() {
   }
 
   const selectedKey = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
-  const selectedEntries = mockEntries[selectedKey] ?? [];
+  const selectedEntries = entriesByDate[selectedKey] ?? [];
 
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
 
   const entryCount = (d: number) =>
-    (mockEntries[`${year}-${month + 1}-${d}`] ?? []).length;
+    entriesByDate[`${year}-${month + 1}-${d}`]?.length ?? 0;
 
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">
