@@ -1,66 +1,83 @@
 'use server';
 
-import { insertFriendRelation, deleteFriendRelation, type Friend } from '@/lib/queries/friends';
+import { redirect } from 'next/navigation';
+
+import { deleteFriend, insertFriend, searchUserByName } from '@/lib/queries/friends';
 
 export type FriendActionResult = {
   error: string | null;
-  data?: Friend[];
 };
 
-function validateFriendIds(
-  friend_a_id: string,
-  friend_b_id: string
-): { friend_a_id: string; friend_b_id: string } | { error: string } {
-  if (typeof friend_a_id !== 'string' || friend_a_id.trim() === '') {
-    return { error: 'friend_a_id를 입력해 주세요.' };
+export async function addFriend(formData: FormData): Promise<FriendActionResult> {
+  const name = formData.get('name');
+  const friendUserId = formData.get('friend_user_id');
+
+  if (typeof friendUserId === 'string' && friendUserId.trim() !== '') {
+    try {
+      await insertFriend(friendUserId.trim());
+      return { error: null };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '친구 추가에 실패했습니다.';
+      return { error: message };
+    }
   }
 
-  if (typeof friend_b_id !== 'string' || friend_b_id.trim() === '') {
-    return { error: 'friend_b_id를 입력해 주세요.' };
+  if (typeof name !== 'string' || name.trim() === '') {
+    return { error: '사용자 이름을 입력해 주세요.' };
   }
 
-  if (friend_a_id.trim() === friend_b_id.trim()) {
-    return { error: '같은 아이디는 친구 관계로 저장할 수 없습니다.' };
-  }
+  const trimmed = name.trim();
 
-  return {
-    friend_a_id: friend_a_id.trim(),
-    friend_b_id: friend_b_id.trim(),
-  };
+  try {
+    const result = await searchUserByName(trimmed);
+
+    if (result === null) {
+      return { error: '해당 사용자를 찾을 수 없습니다.' };
+    }
+
+    if (result === 'self') {
+      return { error: '자기 자신은 친구로 추가할 수 없습니다.' };
+    }
+
+    await insertFriend(result.id);
+    return { error: null };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : '친구 추가에 실패했습니다.';
+    return { error: message };
+  }
 }
 
-export async function createFriendRelation(
-  friend_a_id: string,
-  friend_b_id: string
-): Promise<FriendActionResult> {
-  const validated = validateFriendIds(friend_a_id, friend_b_id);
+export async function removeFriend(formData: FormData): Promise<FriendActionResult> {
+  const friendUserId = formData.get('friend_user_id');
 
-  if ('error' in validated) {
-    return { error: validated.error };
+  if (typeof friendUserId !== 'string' || friendUserId.trim() === '') {
+    return { error: '삭제할 친구를 찾지 못했습니다.' };
   }
 
   try {
-    const data = await insertFriendRelation(validated.friend_a_id, validated.friend_b_id);
-    return { error: null, data };
+    await deleteFriend(friendUserId.trim());
+    return { error: null };
   } catch {
-    return { error: '친구 관계 저장에 실패했습니다.' };
+    return { error: '친구 삭제에 실패했습니다.' };
   }
 }
 
-export async function removeFriendRelation(
-  friend_a_id: string,
-  friend_b_id: string
-): Promise<FriendActionResult> {
-  const validated = validateFriendIds(friend_a_id, friend_b_id);
+export async function submitAddFriend(formData: FormData) {
+  const result = await addFriend(formData);
 
-  if ('error' in validated) {
-    return { error: validated.error };
+  if (result.error) {
+    redirect(`/friends?error=${encodeURIComponent(result.error)}`);
   }
 
-  try {
-    await deleteFriendRelation(validated.friend_a_id, validated.friend_b_id);
-    return { error: null, data: [] };
-  } catch {
-    return { error: '친구 관계 삭제에 실패했습니다.' };
+  redirect('/friends');
+}
+
+export async function submitRemoveFriend(formData: FormData) {
+  const result = await removeFriend(formData);
+
+  if (result.error) {
+    redirect(`/friends?error=${encodeURIComponent(result.error)}`);
   }
+
+  redirect('/friends');
 }

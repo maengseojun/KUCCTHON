@@ -1,17 +1,12 @@
 'use server';
 
-import {
-  deleteTargetById,
-  getTargets,
-  incrementThankYouCount,
-  decrementThankYouCount,
-  insertTarget,
-} from '@/lib/queries/targets';
-import { TARGET_TYPES, type CreateTargetInput, type Target, type TargetType } from '@/types/target';
+import { redirect } from 'next/navigation';
+
+import { deleteTargetById, insertTarget } from '@/lib/queries/targets';
+import { TARGET_TYPES, type CreateTargetInput, type TargetType } from '@/types/target';
 
 export type TargetActionResult = {
   error: string | null;
-  data?: Target;
 };
 
 function readString(formData: FormData, key: string) {
@@ -23,10 +18,23 @@ function isTargetType(value: string): value is TargetType {
   return TARGET_TYPES.includes(value as TargetType);
 }
 
+function isValidDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const [, year, month, day] = match;
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  return (
+    date.getUTCFullYear() === Number(year) &&
+    date.getUTCMonth() === Number(month) - 1 &&
+    date.getUTCDate() === Number(day)
+  );
+}
+
 function validateCreateTargetInput(formData: FormData): CreateTargetInput | TargetActionResult {
   const name = readString(formData, 'name');
   const type = readString(formData, 'type');
   const memo = readString(formData, 'memo');
+  const birthday = readString(formData, 'birthday');
 
   if (!name) {
     return { error: '감사 대상 이름을 입력해 주세요.' };
@@ -36,15 +44,16 @@ function validateCreateTargetInput(formData: FormData): CreateTargetInput | Targ
     return { error: '감사 대상 유형을 선택해 주세요.' };
   }
 
+  if (birthday && !isValidDate(birthday)) {
+    return { error: '올바른 생년월일 형식을 입력해 주세요.' };
+  }
+
   return {
     name,
     type,
     memo: memo || null,
+    birthday: birthday || null,
   };
-}
-
-export async function fetchTargets(): Promise<Target[]> {
-  return getTargets();
 }
 
 export async function createTarget(formData: FormData): Promise<TargetActionResult> {
@@ -55,8 +64,8 @@ export async function createTarget(formData: FormData): Promise<TargetActionResu
   }
 
   try {
-    const data = await insertTarget(validated);
-    return { error: null, data };
+    await insertTarget(validated);
+    return { error: null };
   } catch {
     return { error: '감사 대상 저장에 실패했습니다.' };
   }
@@ -77,28 +86,18 @@ export async function deleteTarget(formData: FormData): Promise<TargetActionResu
   }
 }
 
-export async function incrementTargetCount(id: string): Promise<TargetActionResult> {
-  if (!id || typeof id !== 'string') {
-    return { error: '대상 ID가 필요합니다.' };
+export async function submitCreateTarget(formData: FormData) {
+  const result = await createTarget(formData);
+  if (result.error) {
+    redirect(`/targets?error=${encodeURIComponent(result.error)}`);
   }
-
-  try {
-    const data = await incrementThankYouCount(id.trim());
-    return { error: null, data };
-  } catch {
-    return { error: '감사 수 증가에 실패했습니다.' };
-  }
+  redirect('/targets');
 }
 
-export async function decrementTargetCount(id: string): Promise<TargetActionResult> {
-  if (!id || typeof id !== 'string') {
-    return { error: '대상 ID가 필요합니다.' };
+export async function submitDeleteTarget(formData: FormData) {
+  const result = await deleteTarget(formData);
+  if (result.error) {
+    redirect(`/targets?error=${encodeURIComponent(result.error)}`);
   }
-
-  try {
-    const data = await decrementThankYouCount(id.trim());
-    return { error: null, data };
-  } catch {
-    return { error: '감사 수 감소에 실패했습니다.' };
-  }
+  redirect('/targets');
 }

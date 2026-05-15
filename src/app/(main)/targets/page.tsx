@@ -1,7 +1,6 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
-import { createTarget, deleteTarget } from '@/actions/targets';
+import { submitCreateTarget, submitDeleteTarget } from '@/actions/targets';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { SUGGESTED_EVENTS } from '@/lib/constants/suggested-events';
 import { getTargets } from '@/lib/queries/targets';
@@ -14,35 +13,8 @@ type TargetsPageProps = {
 };
 
 function getErrorMessage(error: string | string[] | undefined) {
-  if (!error) {
-    return null;
-  }
-
+  if (!error) return null;
   return Array.isArray(error) ? error[0] : error;
-}
-
-async function submitTarget(formData: FormData) {
-  'use server';
-
-  const result = await createTarget(formData);
-
-  if (result.error) {
-    redirect(`/targets?error=${encodeURIComponent(result.error)}`);
-  }
-
-  redirect('/targets');
-}
-
-async function submitDeleteTarget(formData: FormData) {
-  'use server';
-
-  const result = await deleteTarget(formData);
-
-  if (result.error) {
-    redirect(`/targets?error=${encodeURIComponent(result.error)}`);
-  }
-
-  redirect('/targets');
 }
 
 export default async function TargetsPage({ searchParams }: TargetsPageProps) {
@@ -63,7 +35,7 @@ export default async function TargetsPage({ searchParams }: TargetsPageProps) {
         </header>
 
         <section className="activity-list" aria-label="감사 대상 추가" style={{ gap: 14 }}>
-          <form action={submitTarget} style={{ display: 'grid', gap: 12 }}>
+          <form action={submitCreateTarget} style={{ display: 'grid', gap: 12 }}>
             <label style={{ display: 'grid', gap: 8 }}>
               <span className="panel-label" style={{ marginBottom: 0 }}>
                 Name
@@ -108,6 +80,25 @@ export default async function TargetsPage({ searchParams }: TargetsPageProps) {
                   </option>
                 ))}
               </select>
+            </label>
+
+            <label style={{ display: 'grid', gap: 8 }}>
+              <span className="panel-label" style={{ marginBottom: 0 }}>
+                Birthday
+              </span>
+              <input
+                name="birthday"
+                type="date"
+                style={{
+                  width: '100%',
+                  border: '1px solid var(--border)',
+                  borderRadius: 16,
+                  background: 'var(--surface-strong)',
+                  color: 'var(--foreground)',
+                  font: 'inherit',
+                  padding: '12px 14px',
+                }}
+              />
             </label>
 
             <label style={{ display: 'grid', gap: 8 }}>
@@ -168,8 +159,12 @@ export default async function TargetsPage({ searchParams }: TargetsPageProps) {
                   >
                     <strong>{target.name}</strong>
                     <p>
-                      {TARGET_TYPE_LABELS[target.type]} · 추천 일정{' '}
-                      {SUGGESTED_EVENTS[target.type].map((event) => event.label).join(', ')}
+                      {TARGET_TYPE_LABELS[target.type]}
+                      {target.birthday ? ` · 🎂 ${target.birthday}` : ''}
+                      {' · '}감사 {target.thank_you_count}회
+                    </p>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
+                      추천: {SUGGESTED_EVENTS[target.type].map((e) => e.label).join(', ')}
                     </p>
                   </Link>
                 </div>
