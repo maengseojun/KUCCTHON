@@ -10,7 +10,6 @@ type EntryType = { id: string; text: string; isAnniversary?: boolean; targetName
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const GRID_SIZE = 42; // 7 × 6
-//끼야아아아악
 
 // 💡 날짜를 'YYYY-MM-DD' 형식으로 일관되게 포맷팅하는 헬퍼 함수
 const formatDateKey = (year: number, month: number, day: number) => {
