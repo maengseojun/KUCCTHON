@@ -2,9 +2,6 @@
   "name": "KUCCTHON Dev Container",
   "dockerFile": "Dockerfile",
   "context": "..",
-  "settings": {
-    "terminal.integrated.defaultProfile.linux": "bash"
-  },
   "postCreateCommand": "npm ci",
   "forwardPorts": [3000],
   "customizations": {
@@ -12,7 +9,10 @@
       "extensions": [
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode"
-      ]
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
     }
   },
   "remoteUser": "vscode"
