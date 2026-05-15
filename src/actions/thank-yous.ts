@@ -1,5 +1,6 @@
 'use server';
 
+import { isValidDateKey } from '@/lib/calendar/dates';
 import { getThankYouList, insertThankYou, type ThankYou } from '@/lib/queries/thank-yous';
 
 export type ThankYouActionResult = {
@@ -10,49 +11,62 @@ export type ThankYouActionResult = {
 function validateThankYouInput(
   from_id: string,
   to_id: string,
-  content: string
-): { from_id: string; to_id: string; content: string } | ThankYouActionResult {
+  content: string,
+  entry_date: string
+): { from_id: string; to_id: string; content: string; entry_date: string } | ThankYouActionResult {
   if (typeof from_id !== 'string' || from_id.trim() === '') {
-    return { error: '보낸 사람을 입력해 주세요.', data: undefined };
+    return { error: '보내는 사용자를 확인하지 못했습니다.', data: undefined };
   }
 
   if (typeof to_id !== 'string' || to_id.trim() === '') {
-    return { error: '받을 사람을 입력해 주세요.', data: undefined };
+    return { error: '받을 사용자를 입력해 주세요.', data: undefined };
   }
 
   if (typeof content !== 'string' || content.trim() === '') {
     return { error: '감사 메시지를 입력해 주세요.', data: undefined };
   }
 
+  if (typeof entry_date !== 'string' || !isValidDateKey(entry_date)) {
+    return { error: '감사 날짜를 yyyy-mm-dd 형식으로 입력해 주세요.', data: undefined };
+  }
+
   return {
     from_id: from_id.trim(),
     to_id: to_id.trim(),
     content: content.trim(),
+    entry_date,
   };
 }
 
 export async function fetchThankYouList(): Promise<ThankYou[]> {
-  const thankYous = await getThankYouList();
-
-  return thankYous;
+  return getThankYouList();
 }
 
 export async function createThankYou(
   from_id: string,
   to_id: string,
-  content: string
+  content: string,
+  entry_date: string
 ): Promise<ThankYouActionResult> {
-  const validated = validateThankYouInput(from_id, to_id, content);
+  const validated = validateThankYouInput(from_id, to_id, content, entry_date);
 
   if ('error' in validated) {
     return validated;
   }
 
   try {
-    const data = await insertThankYou(validated.from_id, validated.to_id, validated.content);
+    const data = await insertThankYou(
+      validated.from_id,
+      validated.to_id,
+      validated.content,
+      validated.entry_date
+    );
 
     return { error: null, data };
   } catch {
-    return { error: '감사 메시지 저장에 실패했습니다. 다시 시도해 주세요.', data: undefined };
+    return {
+      error: '감사 메시지 저장에 실패했습니다. 다시 시도해 주세요.',
+      data: undefined,
+    };
   }
 }
