@@ -105,6 +105,24 @@ export async function login(formData: FormData): Promise<AuthActionResult> {
   redirect('/');
 }
 
+function getSignupErrorMessage(message: string) {
+  const lowerMessage = message.toLowerCase();
+
+  if (lowerMessage.includes('already') || lowerMessage.includes('registered')) {
+    return '이미 가입된 이메일입니다. 로그인해 주세요.';
+  }
+
+  if (lowerMessage.includes('password')) {
+    return '비밀번호는 6자 이상으로 입력해 주세요.';
+  }
+
+  if (lowerMessage.includes('email')) {
+    return '이메일 형식으로 입력해 주세요.';
+  }
+
+  return '회원가입에 실패했습니다. 다시 시도해 주세요.';
+}
+
 export async function signup(formData: FormData): Promise<AuthActionResult> {
   const signupInput = readSignupInput(formData);
 
@@ -128,13 +146,23 @@ export async function signup(formData: FormData): Promise<AuthActionResult> {
   });
 
   if (error) {
-    return { error: '회원가입에 실패했습니다. 다시 시도해 주세요.' };
+    return { error: getSignupErrorMessage(error.message) };
   }
 
-  if (!session) {
-    redirect(
-      `/login?message=${encodeURIComponent('회원가입이 접수되었습니다. 이메일을 확인한 뒤 로그인해 주세요.')}`
-    );
+  if (session) {
+    redirect('/');
+  }
+
+  const { error: loginError } = await supabase.auth.signInWithPassword({
+    email: signupInput.email,
+    password: signupInput.password,
+  });
+
+  if (loginError) {
+    return {
+      error:
+        '가입은 생성됐지만 바로 로그인할 수 없습니다. Supabase Auth에서 이메일 확인 설정을 꺼주세요.',
+    };
   }
 
   redirect('/');

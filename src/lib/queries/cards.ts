@@ -1,38 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
-const supabase = createClient(
-	process.env.NEXT_PUBLIC_SUPABASE_URL!,
-	process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export type CardContent = {
+  content: string;
+};
 
-export interface Card {
-	from_id: string;
-	to_id: string;
-	created_at: string;
-	content: string;
-}
+export async function getCardsByFromAndToId(fromId: string, toId: string): Promise<CardContent[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('thank-yous')
+    .select('content')
+    .eq('from_id', fromId)
+    .eq('to_id', toId)
+    .order('created_at', { ascending: true });
 
-export async function getCardsByFromAndToId(
-	from_id: string,
-	to_id: string
-): Promise<Card[]> {
-	try {
-		const { data, error } = await supabase
-			.from('cards')
-			.select('from_id, to_id, created_at, content')
-			.eq('from_id', from_id)
-			.eq('to_id', to_id)
-			.order('created_at', { ascending: false });
+  if (error) {
+    throw new Error('카드 내용을 불러오지 못했습니다.');
+  }
 
-		if (error) {
-			throw new Error(
-				`Failed to fetch cards for from_id=${from_id} to_id=${to_id}: ${error.message}`
-			);
-		}
-
-		return data || [];
-	} catch (error) {
-		console.error('Error fetching cards by from_id and to_id:', error);
-		throw error;
-	}
+  return (data ?? []) as CardContent[];
 }

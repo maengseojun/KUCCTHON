@@ -1,6 +1,6 @@
 'use server';
 
-import { getCardsByFromAndToId, type Card } from '@/lib/queries/cards';
+import { getCardsByFromAndToId } from '@/lib/queries/cards';
 
 function escapeHtml(value: string): string {
   return value
@@ -44,7 +44,7 @@ export async function formatCardContentsHtml(
       error: null,
       html: `<div class="card-contents">${htmlLines}</div>`,
     };
-  } catch (error) {
+  } catch {
     return { error: '카드 내용을 불러오는 중 오류가 발생했습니다.' };
   }
 }
