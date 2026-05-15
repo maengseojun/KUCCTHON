@@ -15,6 +15,7 @@ export type Target = {
   name: string;
   type: TargetType;
   memo: string | null;
+  birthday: string | null;
   thank_you_count: number;
   created_at: string;
 };
@@ -23,4 +24,5 @@ export type CreateTargetInput = {
   name: string;
   type: TargetType;
   memo?: string | null;
+  birthday?: string | null;
 };

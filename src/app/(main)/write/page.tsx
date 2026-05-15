@@ -42,29 +42,13 @@ export default function WritePage() {
         if (!user?.id) return;
         setUserId(user.id);
 
-        let thankYouList = await fetchThankYouList(user.id);
-
-        if (thankYouList.length === 0) {
-          const today = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
-          const result = await createThankYou(
-            user.id,
-            'auto-generated-target',
-            today,
-            '첫 번째 감사 메시지입니다. 환영합니다!'
-          );
-
-          if (!result.error) {
-            thankYouList = await fetchThankYouList(user.id);
-          } else {
-            console.warn('자동 감사 메시지 저장에 실패했습니다:', result.error);
-          }
-        }
+        let thankYouList = await fetchThankYouList();
 
         const entriesRecord: Record<string, EntryType[]> = {};
 
         for (const thankYou of thankYouList) {
-          // 💡 DB에서 온 thankYou.date가 '2026-5-1' 혹은 '2026-05-01' 어떤 형태든 YYYY-MM-DD로 정규화
-          const dateObj = new Date(thankYou.date);
+          // 💡 DB에서 온 thankYou.created_at을 YYYY-MM-DD로 정규화
+          const dateObj = new Date(thankYou.created_at);
           if (isNaN(dateObj.getTime())) continue; // 올바르지 않은 날짜 패스
 
           const key = getDateKey(dateObj);
@@ -73,10 +57,10 @@ export default function WritePage() {
             entriesRecord[key] = [];
           }
           entriesRecord[key].push({
-            id: thankYou.id || `${thankYou.from_id}-${thankYou.date}-${entriesRecord[key].length}`, 
+            id: thankYou.id,
             text: thankYou.content,
             isAnniversary: false,
-            targetName: thankYou.to_id,
+            targetName: thankYou.target_id || thankYou.to_id || '대상 없음',
           });
         }
 

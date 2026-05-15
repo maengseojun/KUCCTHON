@@ -1,23 +1,36 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { createThankYouForTarget } from '@/actions/thank-yous';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { getCelebrationsByTargetType } from '@/lib/constants/celebrations';
 import { SUGGESTED_EVENTS } from '@/lib/constants/suggested-events';
 import { getEventsByTargetId } from '@/lib/queries/events';
 import { getTargetById } from '@/lib/queries/targets';
+import { getThankYousByTargetId } from '@/lib/queries/thank-yous';
 import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import { TARGET_TYPE_LABELS } from '@/types/target';
 
 type TargetDetailPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string | string[] }>;
 };
 
-export default async function TargetDetailPage({ params }: TargetDetailPageProps) {
+function getErrorMessage(error: string | string[] | undefined) {
+  if (!error) return null;
+  return Array.isArray(error) ? error[0] : error;
+}
+
+export default async function TargetDetailPage({ params, searchParams }: TargetDetailPageProps) {
   const { id } = await params;
-  const [target, events] = await Promise.all([getTargetById(id), getEventsByTargetId(id)]);
+  const { error } = await searchParams;
+  const errorMessage = getErrorMessage(error);
+
+  const [target, events, thankYous] = await Promise.all([
+    getTargetById(id),
+    getEventsByTargetId(id),
+    getThankYousByTargetId(id),
+  ]);
 
   if (!target) {
     notFound();
@@ -38,12 +51,84 @@ export default async function TargetDetailPage({ params }: TargetDetailPageProps
           </Link>
         </header>
 
+        {/* Summary */}
+        <section className="hero-panel" aria-label="대상 요약">
+          <p className="panel-label">Summary</p>
+          <h2>감사 {target.thank_you_count}회 작성</h2>
+          {target.birthday ? <p>🎂 생년월일: {target.birthday}</p> : null}
+          {target.memo ? <p>📝 {target.memo}</p> : null}
+        </section>
+
+        {/* 감사 메시지 작성 */}
+        <section className="activity-list" aria-label="감사 메시지 작성" style={{ gap: 14 }}>
+          <h2>감사 메시지 작성</h2>
+          <form action={createThankYouForTarget} style={{ display: 'grid', gap: 12 }}>
+            <input name="target_id" type="hidden" value={target.id} />
+            <textarea
+              name="content"
+              placeholder="감사한 마음을 적어보세요..."
+              required
+              rows={3}
+              style={{
+                width: '100%',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                background: 'var(--surface-strong)',
+                color: 'var(--foreground)',
+                font: 'inherit',
+                padding: '12px 14px',
+                resize: 'vertical',
+              }}
+            />
+
+            {errorMessage ? (
+              <p
+                role="alert"
+                style={{
+                  borderRadius: 16,
+                  background: '#fff1ed',
+                  color: '#9a3412',
+                  fontSize: '0.875rem',
+                  lineHeight: 1.4,
+                  padding: '10px 12px',
+                }}
+              >
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <button type="submit">감사 저장</button>
+          </form>
+        </section>
+
+        {/* 감사 기록 목록 */}
+        <section className="activity-list" aria-label="감사 기록">
+          <h2>감사 기록 ({thankYous.length})</h2>
+          {thankYous.length === 0 ? (
+            <p>아직 작성한 감사 기록이 없습니다.</p>
+          ) : (
+            thankYous.map((ty) => (
+              <article key={ty.id} className="activity-item">
+                <span className="avatar">💌</span>
+                <div>
+                  <p>{ty.content}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
+                    {new Date(ty.created_at).toLocaleDateString('ko-KR')}
+                  </p>
+                </div>
+              </article>
+            ))
+          )}
+        </section>
+
+        {/* 추천 일정 */}
         <section className="hero-panel" aria-label="추천 일정">
           <p className="panel-label">Recommended setup</p>
           <h2>{TARGET_TYPE_LABELS[target.type]}에게 필요한 날짜</h2>
           <p>{SUGGESTED_EVENTS[target.type].map((event) => event.label).join(', ')}</p>
         </section>
 
+        {/* 저장된 일정 */}
         <section className="activity-list" aria-label="저장된 일정">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h2>저장된 일정</h2>
@@ -70,6 +155,7 @@ export default async function TargetDetailPage({ params }: TargetDetailPageProps
           )}
         </section>
 
+        {/* 자동 기념일 */}
         <section className="activity-list" aria-label="자동 기념일">
           <h2>자동 기념일</h2>
           {celebrations.map((celebration) => (
