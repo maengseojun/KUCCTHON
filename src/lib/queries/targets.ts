@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import type { CreateTargetInput, Target } from '@/types/target';
 
+const SELECT_COLUMNS = 'id, user_id, name, type, memo, thank_you_count, created_at';
+
 async function getCurrentUserId() {
   const supabase = await createClient();
   const {
@@ -29,7 +31,7 @@ export async function getTargets(): Promise<Target[]> {
 
   const { data, error } = await supabase
     .from('targets')
-    .select('id, user_id, name, type, memo, created_at')
+    .select(SELECT_COLUMNS)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -49,7 +51,7 @@ export async function getTargetById(id: string): Promise<Target | null> {
 
   const { data, error } = await supabase
     .from('targets')
-    .select('id, user_id, name, type, memo, created_at')
+    .select(SELECT_COLUMNS)
     .eq('user_id', userId)
     .eq('id', id)
     .maybeSingle();
@@ -71,7 +73,7 @@ export async function insertTarget(input: CreateTargetInput): Promise<Target> {
       type: input.type,
       memo: input.memo ?? null,
     })
-    .select('id, user_id, name, type, memo, created_at')
+    .select(SELECT_COLUMNS)
     .single();
 
   if (error) {
@@ -88,4 +90,34 @@ export async function deleteTargetById(id: string): Promise<void> {
   if (error) {
     throw new Error('감사 대상을 삭제하지 못했습니다.');
   }
+}
+
+export async function incrementThankYouCount(id: string): Promise<Target> {
+  const { supabase, userId } = await requireCurrentUserId();
+
+  const { data, error } = await supabase.rpc('increment_thank_you_count', {
+    target_id: id,
+    owner_id: userId,
+  });
+
+  if (error) {
+    throw new Error('감사 수 증가에 실패했습니다.');
+  }
+
+  return data as Target;
+}
+
+export async function decrementThankYouCount(id: string): Promise<Target> {
+  const { supabase, userId } = await requireCurrentUserId();
+
+  const { data, error } = await supabase.rpc('decrement_thank_you_count', {
+    target_id: id,
+    owner_id: userId,
+  });
+
+  if (error) {
+    throw new Error('감사 수 감소에 실패했습니다.');
+  }
+
+  return data as Target;
 }

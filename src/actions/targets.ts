@@ -1,6 +1,12 @@
 'use server';
 
-import { deleteTargetById, getTargets, insertTarget } from '@/lib/queries/targets';
+import {
+  deleteTargetById,
+  getTargets,
+  incrementThankYouCount,
+  decrementThankYouCount,
+  insertTarget,
+} from '@/lib/queries/targets';
 import { TARGET_TYPES, type CreateTargetInput, type Target, type TargetType } from '@/types/target';
 
 export type TargetActionResult = {
@@ -68,5 +74,31 @@ export async function deleteTarget(formData: FormData): Promise<TargetActionResu
     return { error: null };
   } catch {
     return { error: '감사 대상 삭제에 실패했습니다.' };
+  }
+}
+
+export async function incrementTargetCount(id: string): Promise<TargetActionResult> {
+  if (!id || typeof id !== 'string') {
+    return { error: '대상 ID가 필요합니다.' };
+  }
+
+  try {
+    const data = await incrementThankYouCount(id.trim());
+    return { error: null, data };
+  } catch {
+    return { error: '감사 수 증가에 실패했습니다.' };
+  }
+}
+
+export async function decrementTargetCount(id: string): Promise<TargetActionResult> {
+  if (!id || typeof id !== 'string') {
+    return { error: '대상 ID가 필요합니다.' };
+  }
+
+  try {
+    const data = await decrementThankYouCount(id.trim());
+    return { error: null, data };
+  } catch {
+    return { error: '감사 수 감소에 실패했습니다.' };
   }
 }
