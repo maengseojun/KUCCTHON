@@ -1,10 +1,6 @@
 'use server';
 
-import {
-  insertFriendRelation,
-  deleteFriendRelation,
-  type Friend,
-} from '@/lib/queries/friends';
+import { insertFriendRelation, deleteFriendRelation, type Friend } from '@/lib/queries/friends';
 
 export type FriendActionResult = {
   error: string | null;
@@ -68,4 +64,3 @@ export async function removeFriendRelation(
     return { error: '친구 관계 삭제에 실패했습니다.' };
   }
 }
-
