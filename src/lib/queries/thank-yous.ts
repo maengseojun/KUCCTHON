@@ -1,96 +1,108 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import type { ThankYou } from '@/types/thank-you';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const SELECT_COLUMNS = 'id, from_id, to_id, target_id, content, created_at';
 
-export interface ThankYou {
-  from_id: string;
-  to_id: string;
-  created_at: string;
-  content: string;
+async function getCurrentUserId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return { supabase, userId: user?.id ?? null };
 }
-/*
+
+async function requireCurrentUserId() {
+  const { supabase, userId } = await getCurrentUserId();
+  if (!userId) throw new Error('로그인이 필요합니다.');
+  return { supabase, userId };
+}
+
+// 기존 호환: 전체 목록 조회
 export async function getThankYouList(): Promise<ThankYou[]> {
-  try {
-    const { data, error } = await supabase
-      .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
-      .order('created_at', { ascending: false });
+  const { supabase, userId } = await getCurrentUserId();
 
-    if (error) {
-      throw new Error(`Failed to fetch thank you list: ${error.message}`);
-    }
+  if (!userId) return [];
 
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching thank you list:', error);
-    throw error;
-  }
-}
-*/
+  const { data, error } = await supabase
+    .from('thank-yous')
+    .select(SELECT_COLUMNS)
+    .eq('from_id', userId)
+    .order('created_at', { ascending: false });
 
-export async function getThankYouList(): Promise<ThankYou[]> {
-  try {
-    const { data, error } = await supabase
-      .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
-      .order('created_at', { ascending: false });
+  if (error) throw new Error('감사 기록을 불러오지 못했습니다.');
 
-    if (error) {
-      throw new Error(`Failed to fetch thank you list: ${error.message}`);
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching thank you list:', error);
-    throw error;
-  }
+  return (data ?? []) as ThankYou[];
 }
 
+// 기존 호환: user-to-user 감사 저장
 export async function insertThankYou(
   from_id: string,
   to_id: string,
   content: string
 ): Promise<ThankYou> {
-  try {
-    const { data, error } = await supabase
-      .from('thank-yous')
-      .insert({
-        from_id,
-        to_id,
-        content,
-      })
-      .select('from_id, to_id, created_at, content')
-      .single();
+  const supabase = await createClient();
 
-    if (error) {
-      throw new Error(`Failed to insert thank you: ${error.message}`);
-    }
+  const { data, error } = await supabase
+    .from('thank-yous')
+    .insert({ from_id, to_id, content })
+    .select(SELECT_COLUMNS)
+    .single();
 
-    return data;
-  } catch (error) {
-    console.error('Error inserting thank you:', error);
-    throw error;
-  }
+  if (error) throw new Error('감사 메시지 저장에 실패했습니다.');
+
+  return data as ThankYou;
 }
 
+// 신규: Target별 감사 기록 조회
+export async function getThankYousByTargetId(targetId: string): Promise<ThankYou[]> {
+  const { supabase, userId } = await requireCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('thank-yous')
+    .select(SELECT_COLUMNS)
+    .eq('from_id', userId)
+    .eq('target_id', targetId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error('감사 기록을 불러오지 못했습니다.');
+
+  return (data ?? []) as ThankYou[];
+}
+
+// 신규: Target에 감사 메시지 저장
+export async function insertThankYouForTarget(
+  targetId: string,
+  content: string
+): Promise<ThankYou> {
+  const { supabase, userId } = await requireCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('thank-yous')
+    .insert({
+      from_id: userId,
+      to_id: null,
+      target_id: targetId,
+      content,
+    })
+    .select(SELECT_COLUMNS)
+    .single();
+
+  if (error) throw new Error('감사 메시지 저장에 실패했습니다.');
+
+  return data as ThankYou;
+}
+
+// 기존 호환: from_id 기준 조회
 export async function getThankYousByFromId(from_id: string): Promise<ThankYou[]> {
-  try {
-    const { data, error } = await supabase
-      .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
-      .eq('from_id', from_id)
-      .order('created_at', { ascending: false });
+  const supabase = await createClient();
 
-    if (error) {
-      throw new Error(`Failed to fetch thank yous for from_id=${from_id}: ${error.message}`);
-    }
+  const { data, error } = await supabase
+    .from('thank-yous')
+    .select(SELECT_COLUMNS)
+    .eq('from_id', from_id)
+    .order('created_at', { ascending: false });
 
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching thank yous by from_id:', error);
-    throw error;
-  }
+  if (error) throw new Error('감사 기록을 불러오지 못했습니다.');
+
+  return (data ?? []) as ThankYou[];
 }

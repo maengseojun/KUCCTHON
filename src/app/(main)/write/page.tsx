@@ -74,8 +74,7 @@ export default function WritePage() {
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
 
-  const entryCount = (d: number) =>
-    (mockEntries[`${year}-${month + 1}-${d}`] ?? []).length;
+  const entryCount = (d: number) => (mockEntries[`${year}-${month + 1}-${d}`] ?? []).length;
 
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">
@@ -86,7 +85,12 @@ export default function WritePage() {
             <button
               onClick={prevMonth}
               aria-label="이전 달"
-              style={{ background: 'transparent', color: 'var(--foreground)', padding: 8, minWidth: 'auto' }}
+              style={{
+                background: 'transparent',
+                color: 'var(--foreground)',
+                padding: 8,
+                minWidth: 'auto',
+              }}
             >
               &lt;
             </button>
@@ -96,7 +100,12 @@ export default function WritePage() {
             <button
               onClick={nextMonth}
               aria-label="다음 달"
-              style={{ background: 'transparent', color: 'var(--foreground)', padding: 8, minWidth: 'auto' }}
+              style={{
+                background: 'transparent',
+                color: 'var(--foreground)',
+                padding: 8,
+                minWidth: 'auto',
+              }}
             >
               &gt;
             </button>
