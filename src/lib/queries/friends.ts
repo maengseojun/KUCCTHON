@@ -40,10 +40,7 @@ export async function deleteFriendRelation(
   friend_b_id: string
 ): Promise<void> {
   try {
-    const deleteFirst = await supabase
-      .from('friend')
-      .delete()
-      .match({ friend_a_id, friend_b_id });
+    const deleteFirst = await supabase.from('friend').delete().match({ friend_a_id, friend_b_id });
 
     if (deleteFirst.error) {
       throw deleteFirst.error;
@@ -62,4 +59,3 @@ export async function deleteFriendRelation(
     throw error;
   }
 }
-
