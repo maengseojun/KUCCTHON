@@ -1,78 +1,91 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import type { CreateTargetInput, Target } from '@/types/target';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+async function getCurrentUserId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export interface Target {
-  id: string;
-  nickname: string;
-  thank_you_count: number;
+  return { supabase, userId: user?.id ?? null };
 }
 
-export async function getTargetList(): Promise<Target[]> {
-  try {
-    const { data, error } = await supabase
-      .from('targets')
-      .select('id, nickname, thank_you_count')
-      .order('thank_you_count', { ascending: false });
+async function requireCurrentUserId() {
+  const { supabase, userId } = await getCurrentUserId();
 
-    if (error) {
-      throw new Error(`Failed to fetch target list: ${error.message}`);
-    }
-
-    return (data as Target[]) || [];
-  } catch (error) {
-    console.error('Error fetching target list:', error);
-    throw error;
+  if (!userId) {
+    throw new Error('로그인이 필요합니다.');
   }
+
+  return { supabase, userId };
 }
 
-export async function insertTarget(id: string, nickname: string): Promise<Target> {
-  try {
-    const { data, error } = await supabase
-      .from('targets')
-      .insert({ id, nickname, thank_you_count: 0 })
-      .select('id, nickname, thank_you_count')
-      .single();
+export async function getTargets(): Promise<Target[]> {
+  const { supabase, userId } = await getCurrentUserId();
 
-    if (error) {
-      throw new Error(`Failed to insert target: ${error.message}`);
-    }
-
-    return data as Target;
-  } catch (error) {
-    console.error('Error inserting target:', error);
-    throw error;
+  if (!userId) {
+    return [];
   }
+
+  const { data, error } = await supabase
+    .from('targets')
+    .select('id, user_id, name, type, memo, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error('감사 대상을 불러오지 못했습니다.');
+  }
+
+  return (data ?? []) as Target[];
 }
 
-export async function incrementThankYouCount(id: string): Promise<Target> {
-  try {
-    const current = await supabase.from('targets').select('thank_you_count').eq('id', id).single();
+export async function getTargetById(id: string): Promise<Target | null> {
+  const { supabase, userId } = await getCurrentUserId();
 
-    if (current.error) {
-      throw new Error(`Failed to read current count: ${current.error.message}`);
-    }
+  if (!userId) {
+    return null;
+  }
 
-    const currentCount =
-      typeof current.data?.thank_you_count === 'number' ? current.data.thank_you_count : 0;
+  const { data, error } = await supabase
+    .from('targets')
+    .select('id, user_id, name, type, memo, created_at')
+    .eq('user_id', userId)
+    .eq('id', id)
+    .maybeSingle();
 
-    const newCount = currentCount + 1;
+  if (error) {
+    throw new Error('감사 대상을 불러오지 못했습니다.');
+  }
 
-    const { data: updated, error: updateError } = await supabase
-      .from('targets')
-      .update({ thank_you_count: newCount })
-      .eq('id', id)
-      .select('id, nickname, thank_you_count')
-      .single();
+  return data as Target | null;
+}
 
-    if (updateError) throw new Error(`Failed to increment thank_you_count: ${updateError.message}`);
+export async function insertTarget(input: CreateTargetInput): Promise<Target> {
+  const { supabase, userId } = await requireCurrentUserId();
+  const { data, error } = await supabase
+    .from('targets')
+    .insert({
+      user_id: userId,
+      name: input.name,
+      type: input.type,
+      memo: input.memo ?? null,
+    })
+    .select('id, user_id, name, type, memo, created_at')
+    .single();
 
-    return updated as Target;
-  } catch (error) {
-    console.error('Error incrementing thank_you_count:', error);
-    throw error;
+  if (error) {
+    throw new Error('감사 대상을 저장하지 못했습니다.');
+  }
+
+  return data as Target;
+}
+
+export async function deleteTargetById(id: string): Promise<void> {
+  const { supabase, userId } = await requireCurrentUserId();
+  const { error } = await supabase.from('targets').delete().eq('user_id', userId).eq('id', id);
+
+  if (error) {
+    throw new Error('감사 대상을 삭제하지 못했습니다.');
   }
 }
