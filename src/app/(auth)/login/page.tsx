@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { login } from '@/actions/auth';
@@ -5,15 +6,16 @@ import { login } from '@/actions/auth';
 type LoginPageProps = {
   searchParams: Promise<{
     error?: string | string[];
+    message?: string | string[];
   }>;
 };
 
-function getErrorMessage(error: string | string[] | undefined) {
-  if (!error) {
+function getSearchMessage(value: string | string[] | undefined) {
+  if (!value) {
     return null;
   }
 
-  return Array.isArray(error) ? error[0] : error;
+  return Array.isArray(value) ? value[0] : value;
 }
 
 async function submitLogin(formData: FormData) {
@@ -27,8 +29,9 @@ async function submitLogin(formData: FormData) {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error } = await searchParams;
-  const errorMessage = getErrorMessage(error);
+  const { error, message } = await searchParams;
+  const errorMessage = getSearchMessage(error);
+  const successMessage = getSearchMessage(message);
 
   return (
     <main className="demo-stage" aria-label="로그인">
@@ -92,6 +95,22 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               />
             </label>
 
+            {successMessage ? (
+              <p
+                role="status"
+                style={{
+                  borderRadius: 16,
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent-strong)',
+                  fontSize: '0.875rem',
+                  lineHeight: 1.4,
+                  padding: '12px 14px',
+                }}
+              >
+                {successMessage}
+              </p>
+            ) : null}
+
             {errorMessage ? (
               <p
                 role="alert"
@@ -114,7 +133,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </form>
 
           <p style={{ fontSize: '0.875rem', textAlign: 'center' }}>
-            아직 계정이 없다면 팀원에게 데모 계정을 요청하세요.
+            처음 오셨나요?{' '}
+            <Link href="/signup" style={{ color: 'var(--accent-strong)', fontWeight: 700 }}>
+              회원가입
+            </Link>
           </p>
         </section>
       </section>
