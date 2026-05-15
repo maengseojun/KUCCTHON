@@ -1,50 +1,113 @@
 'use server';
 
-import { getCardsByFromAndToId } from '@/lib/queries/cards';
+import { redirect } from 'next/navigation';
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+import { createCardForTarget, getOwnCardByToken, getPublicCardByToken } from '@/lib/queries/cards';
+import type { Card, CreateCardInput, PublicCard } from '@/types/card';
+
+export type CardActionResult = {
+  error: string | null;
+  data?: Card;
+};
+
+export type CardLookupResult<TCard> = {
+  error: string | null;
+  data: TCard | null;
+};
+
+function readString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === 'string' ? value.trim() : '';
 }
 
-function validateCardIds(
-  from_id: string,
-  to_id: string
-): { from_id: string; to_id: string } | { error: string } {
-  if (typeof from_id !== 'string' || from_id.trim() === '') {
-    return { error: 'from_id를 입력해 주세요.' };
+function validateCreateCardInput(formData: FormData): CreateCardInput | CardActionResult {
+  const target_id = readString(formData, 'target_id');
+
+  if (!target_id) {
+    return { error: '감사 대상을 찾지 못했습니다.' };
   }
 
-  if (typeof to_id !== 'string' || to_id.trim() === '') {
-    return { error: 'to_id를 입력해 주세요.' };
-  }
-
-  return { from_id: from_id.trim(), to_id: to_id.trim() };
+  return {
+    target_id,
+  };
 }
 
-export async function formatCardContentsHtml(
-  from_id: string,
-  to_id: string
-): Promise<{ error: string | null; html?: string }> {
-  const validated = validateCardIds(from_id, to_id);
+function validateToken(token: string): string | null {
+  const trimmed = token.trim();
+  return trimmed ? trimmed : null;
+}
+
+export async function createCard(formData: FormData): Promise<CardActionResult> {
+  const validated = validateCreateCardInput(formData);
 
   if ('error' in validated) {
-    return { error: validated.error };
+    return validated;
   }
 
   try {
-    const cards = await getCardsByFromAndToId(validated.from_id, validated.to_id);
-    const htmlLines = cards.map((card) => `<p>${escapeHtml(card.content)}</p>`).join('');
+    const data = await createCardForTarget(validated);
+    return { error: null, data };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
 
-    return {
-      error: null,
-      html: `<div class="card-contents">${htmlLines}</div>`,
-    };
-  } catch {
-    return { error: '카드 내용을 불러오는 중 오류가 발생했습니다.' };
+    return { error: '카드 저장에 실패했습니다.' };
+  }
+}
+
+export async function createGratitudeCard(formData: FormData) {
+  const result = await createCard(formData);
+  const targetId = readString(formData, 'target_id');
+
+  if (result.error || !result.data) {
+    const searchParams = new URLSearchParams();
+
+    if (targetId) {
+      searchParams.set('target', targetId);
+    }
+
+    searchParams.set('error', result.error ?? '카드 저장에 실패했습니다.');
+    redirect(`/cards/new?${searchParams.toString()}`);
+  }
+
+  redirect(`/cards/new?target=${result.data.target_id}&token=${result.data.public_token}`);
+}
+
+export async function fetchOwnCardByToken(token: string): Promise<CardLookupResult<Card>> {
+  const validatedToken = validateToken(token);
+
+  if (!validatedToken) {
+    return { error: '공유 토큰을 입력해 주세요.', data: null };
+  }
+
+  try {
+    const data = await getOwnCardByToken(validatedToken);
+    return { error: null, data };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { error: error.message, data: null };
+    }
+
+    return { error: '카드를 불러오지 못했습니다.', data: null };
+  }
+}
+
+export async function fetchPublicCardByToken(token: string): Promise<CardLookupResult<PublicCard>> {
+  const validatedToken = validateToken(token);
+
+  if (!validatedToken) {
+    return { error: '공유 토큰을 입력해 주세요.', data: null };
+  }
+
+  try {
+    const data = await getPublicCardByToken(validatedToken);
+    return { error: null, data };
+  } catch (error) {
+    if (error instanceof Error) {
+      return { error: error.message, data: null };
+    }
+
+    return { error: '공유 카드를 불러오지 못했습니다.', data: null };
   }
 }
