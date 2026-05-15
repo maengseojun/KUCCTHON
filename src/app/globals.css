@@ -11,6 +11,8 @@
   --accent-soft: #dceee8;
   --warning: #b25d2a;
   --shadow: 0 24px 80px rgb(35 47 40 / 18%);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
@@ -61,7 +63,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 28px 24px 16px;
+  padding: calc(28px + var(--safe-top)) 24px 16px;
 }
 
 .eyebrow {
@@ -193,7 +195,7 @@ button {
   margin-top: auto;
   border-top: 1px solid var(--border);
   background: rgb(255 255 255 / 94%);
-  padding: 12px 10px 14px;
+  padding: 12px 10px calc(14px + var(--safe-bottom));
 }
 
 .bottom-tabs span {
