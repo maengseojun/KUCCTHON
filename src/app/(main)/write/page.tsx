@@ -1,28 +1,12 @@
 'use client';
 
-import { useState, type TouchEvent } from 'react';
+import { useState, useEffect, type TouchEvent } from 'react';
 import Link from 'next/link';
 import { BottomNav } from '@/components/nav/bottom-nav';
+import { fetchThankYouList } from '@/actions/thank-yous';
+import { createClient } from '@/lib/supabase/client';
 
-// Mock data – will be replaced with real Supabase queries later
-const mockEntries: Record<
-  string,
-  { id: number; text: string; isAnniversary?: boolean; targetName?: string }[]
-> = {
-  '2026-5-3': [{ id: 1, text: '오랜만에 만난 친구가 커피를 사주었다.' }],
-  '2026-5-5': [
-    { id: 2, text: '어린이날 기념으로 동생과 재미있게 놀았다.' },
-    { id: 3, text: '날씨가 너무 맑아서 기분이 좋았다.' },
-  ],
-  '2026-5-10': [
-    { id: 4, text: '팀원들이 다 같이 밤새며 프로젝트를 완성했다! 너무 고마운 팀원들.' },
-  ],
-  '2026-5-14': [
-    { id: 5, text: '로즈데이 기념으로 꽃을 받았다.', isAnniversary: true, targetName: '연인' },
-    { id: 6, text: '지하철에 바로 자리가 나서 편하게 왔다.' },
-  ],
-  '2026-5-16': [{ id: 7, text: '새로운 캘린더 기능을 멋지게 구현했다.' }],
-};
+type EntryType = { id: string; text: string; isAnniversary?: boolean; targetName?: string };
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const GRID_SIZE = 42; // 7 × 6
@@ -32,6 +16,45 @@ export default function WritePage() {
   const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [entries, setEntries] = useState<Record<string, EntryType[]>>({});
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // 감사 데이터와 사용자 ID 로드
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // 사용자 ID 가져오기
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user?.id) return;
+        setUserId(user.id);
+
+        // 감사 리스트 가져오기 (from_id가 userId인 것만)
+        const thankYouList = await fetchThankYouList(user.id);
+        const entriesRecord: Record<string, EntryType[]> = {};
+
+        for (const thankYou of thankYouList) {
+          const key = thankYou.date; // yyyy-m-d 형식
+          if (!entriesRecord[key]) {
+            entriesRecord[key] = [];
+          }
+          entriesRecord[key].push({
+            id: `${thankYou.from_id}-${thankYou.date}`,
+            text: thankYou.content,
+            isAnniversary: false,
+            targetName: thankYou.to_id,
+          });
+        }
+
+        setEntries(entriesRecord);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    }
+
+    loadData();
+  }, []);
 
   const year = baseDate.getFullYear();
   const month = baseDate.getMonth(); // 0-indexed
@@ -69,13 +92,13 @@ export default function WritePage() {
   }
 
   const selectedKey = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
-  const selectedEntries = mockEntries[selectedKey] ?? [];
+  const selectedEntries = entries[selectedKey] ?? [];
 
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
 
   const entryCount = (d: number) =>
-    (mockEntries[`${year}-${month + 1}-${d}`] ?? []).length;
+    (entries[`${year}-${month + 1}-${d}`] ?? []).length;
 
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">

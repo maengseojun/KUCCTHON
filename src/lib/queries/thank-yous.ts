@@ -8,6 +8,7 @@ const supabase = createClient(
 export interface ThankYou {
   from_id: string;
   to_id: string;
+  date: string;
   created_at: string;
   content: string;
 }
@@ -16,7 +17,7 @@ export async function getThankYouList(): Promise<ThankYou[]> {
   try {
     const { data, error } = await supabase
       .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
+      .select('from_id, to_id, date, created_at, content')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -52,6 +53,7 @@ export async function getThankYouList(): Promise<ThankYou[]> {
 export async function insertThankYou(
   from_id: string,
   to_id: string,
+  date: string,
   content: string
 ): Promise<ThankYou> {
   try {
@@ -60,9 +62,10 @@ export async function insertThankYou(
       .insert({
         from_id,
         to_id,
+        date,
         content,
       })
-      .select('from_id, to_id, created_at, content')
+      .select('from_id, to_id, date, created_at, content')
       .single();
 
     if (error) {
@@ -80,7 +83,7 @@ export async function getThankYousByFromId(from_id: string): Promise<ThankYou[]>
   try {
     const { data, error } = await supabase
       .from('thank-yous')
-      .select('from_id, to_id, created_at, content')
+      .select('from_id, to_id, date, created_at, content')
       .eq('from_id', from_id)
       .order('created_at', { ascending: false });
 
