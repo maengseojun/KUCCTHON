@@ -148,6 +148,25 @@ button {
   padding: 22px;
 }
 
+.hero-actions {
+  display: flex;
+  padding-top: 6px;
+}
+
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 156px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  box-shadow: 0 14px 28px rgb(30 95 79 / 18%);
+  color: #ffffff;
+  font-weight: 700;
+  padding: 13px 18px;
+  text-decoration: none;
+}
+
 .quick-compose {
   display: flex;
   align-items: center;
@@ -187,6 +206,185 @@ button {
 .activity-item p {
   font-size: 0.875rem;
   line-height: 1.35;
+}
+
+.public-card-page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, rgb(220 238 232 / 75%) 0%, transparent 34%),
+    linear-gradient(180deg, #f7faf7 0%, #eef3ef 56%, #e6ece7 100%);
+}
+
+.public-card-shell {
+  width: min(100%, 760px);
+  border: 1px solid var(--border);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.public-card-header {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.public-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.public-card-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 8px 12px;
+  text-transform: uppercase;
+}
+
+.public-card-badge.ghost {
+  background: #edf1ee;
+  color: var(--muted);
+  text-transform: none;
+}
+
+.public-card-kicker {
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.public-card-byline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--muted);
+}
+
+.public-card-byline strong {
+  color: var(--foreground);
+  font-size: 1rem;
+}
+
+.public-card-summary,
+.public-card-section,
+.public-card-footer {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface-strong);
+}
+
+.public-card-summary {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 20px;
+}
+
+.public-card-summary p:last-child {
+  color: var(--foreground);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.public-card-section {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 20px;
+}
+
+.public-card-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.public-card-section-header span {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.public-card-entry-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.public-card-entry {
+  display: flex;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 14px;
+}
+
+.public-card-entry-index {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #f2e7d8;
+  color: #7a4f21;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.public-card-entry p {
+  color: var(--foreground);
+  line-height: 1.6;
+}
+
+.public-card-entry time {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.public-card-empty {
+  color: var(--muted);
+}
+
+.public-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+}
+
+.public-card-footer span {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.public-card-footer strong {
+  color: var(--foreground);
+  font-size: 0.95rem;
 }
 
 .avatar {
@@ -254,6 +452,17 @@ button {
     bottom: 0;
     width: 100%;
     border-radius: 0;
+  }
+
+  .public-card-page {
+    padding: 0;
+  }
+
+  .public-card-shell {
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    padding: 20px;
   }
 }
 

@@ -82,6 +82,11 @@ export default async function Page() {
               <p>생일이나 기념일을 추가하면 홈과 작성하기 화면에서 바로 확인할 수 있습니다.</p>
             </>
           )}
+          <div className="hero-actions">
+            <Link href="/cards/new" className="cta-button">
+              감사 카드 만들기
+            </Link>
+          </div>
         </section>
 
         <section
