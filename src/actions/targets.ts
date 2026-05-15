@@ -39,10 +39,7 @@ export async function fetchTargetList(): Promise<Target[]> {
   return getTargetList();
 }
 
-export async function createTarget(
-  id: string,
-  nickname: string
-): Promise<TargetActionResult> {
+export async function createTarget(id: string, nickname: string): Promise<TargetActionResult> {
   const validated = validateCreateInput(id, nickname);
 
   if ('error' in validated) return validated;
@@ -50,7 +47,7 @@ export async function createTarget(
   try {
     const data = await insertTarget(validated.id, validated.nickname);
     return { error: null, data };
-  } catch (error) {
+  } catch {
     return { error: '대상 생성에 실패했습니다.' };
   }
 }
@@ -63,8 +60,7 @@ export async function incrementTargetCount(id: string): Promise<TargetActionResu
   try {
     const data = await incrementThankYouCount(validated.id);
     return { error: null, data };
-  } catch (error) {
+  } catch {
     return { error: '감사 수 증가에 실패했습니다.' };
   }
 }
-
