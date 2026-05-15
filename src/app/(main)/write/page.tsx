@@ -14,6 +14,14 @@ type Entry = {
 
 type EntriesMap = Record<string, Entry[]>;
 
+type Anniversary = {
+  id: number;
+  name: string;
+  targetName: string;
+  month: number; // 1-12
+  day: number;
+};
+
 // ── Initial mock data ──
 const SEED_ENTRIES: EntriesMap = {
   '2026-5-3': [{ id: 1, text: '오랜만에 만난 친구가 커피를 사주었다.', targetName: '친구' }],
@@ -37,6 +45,10 @@ const SEED_ENTRIES: EntriesMap = {
   ],
 };
 
+const SEED_ANNIVERSARIES: Anniversary[] = [
+  { id: 1, name: '로즈데이', targetName: '연인', month: 5, day: 14 },
+];
+
 const TARGET_OPTIONS = [
   { value: '', label: '선택하세요' },
   { value: '부모님', label: '부모님' },
@@ -47,10 +59,11 @@ const TARGET_OPTIONS = [
 ] as const;
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
-const GRID_SIZE = 42; // 7 × 6
+const GRID_SIZE = 42;
 const STORAGE_KEY = 'gratitude-entries';
+const ANNIV_KEY = 'gratitude-anniversaries';
 const SEED_VERSION_KEY = 'gratitude-seed-version';
-const SEED_VERSION = '4';
+const SEED_VERSION = '5';
 
 // ── Helpers ──
 function dateKey(d: Date) {
@@ -60,34 +73,41 @@ function dateKey(d: Date) {
 function loadEntries(): EntriesMap {
   if (typeof window === 'undefined') return SEED_ENTRIES;
   try {
-    const storedVersion = localStorage.getItem(SEED_VERSION_KEY);
-    if (storedVersion === SEED_VERSION) {
+    const v = localStorage.getItem(SEED_VERSION_KEY);
+    if (v === SEED_VERSION) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw) as EntriesMap;
     }
-  } catch {
-    /* ignore */
-  }
+  } catch { /* ignore */ }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_ENTRIES));
+  localStorage.setItem(ANNIV_KEY, JSON.stringify(SEED_ANNIVERSARIES));
   localStorage.setItem(SEED_VERSION_KEY, SEED_VERSION);
   return SEED_ENTRIES;
 }
 
-function saveEntries(map: EntriesMap) {
+function loadAnniversaries(): Anniversary[] {
+  if (typeof window === 'undefined') return SEED_ANNIVERSARIES;
+  try {
+    const raw = localStorage.getItem(ANNIV_KEY);
+    if (raw) return JSON.parse(raw) as Anniversary[];
+  } catch { /* ignore */ }
+  return SEED_ANNIVERSARIES;
+}
+
+function persist(map: EntriesMap) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
 }
 
-function getNextId(map: EntriesMap): number {
+function persistAnniv(list: Anniversary[]) {
+  localStorage.setItem(ANNIV_KEY, JSON.stringify(list));
+}
+
+function nextId(map: EntriesMap): number {
   let max = 0;
-  for (const list of Object.values(map)) {
-    for (const e of list) {
-      if (e.id > max) max = e.id;
-    }
-  }
+  for (const list of Object.values(map)) for (const e of list) if (e.id > max) max = e.id;
   return max + 1;
 }
 
-// 3-level: light (1) → medium (2) → dark (3+)
 function activityLevel(count: number): string {
   if (count <= 0) return '';
   if (count === 1) return 'activity-light';
@@ -101,16 +121,22 @@ export default function WritePage() {
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [entries, setEntries] = useState<EntriesMap>({});
+  const [anniversaries, setAnniversaries] = useState<Anniversary[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
-  // Modal
+  // Modal modes: 'create' | 'edit' | 'anniversary'
   const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit' | 'anniversary'>('create');
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formTarget, setFormTarget] = useState('');
   const [formContent, setFormContent] = useState('');
+  const [annivName, setAnnivName] = useState('');
+  const [annivTarget, setAnnivTarget] = useState('');
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     setEntries(loadEntries());
+    setAnniversaries(loadAnniversaries());
     setHydrated(true);
   }, []);
 
@@ -133,22 +159,23 @@ export default function WritePage() {
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
-
   type Cell = { date: number; isCurrentMonth: boolean; key: string };
   const cells: Cell[] = [];
   for (let i = 0; i < firstDayOfMonth; i++) {
     const d = daysInPrevMonth - firstDayOfMonth + i + 1;
     cells.push({ date: d, isCurrentMonth: false, key: `p${d}` });
   }
-  for (let i = 1; i <= daysInMonth; i++) {
-    cells.push({ date: i, isCurrentMonth: true, key: `c${i}` });
-  }
-  for (let i = 1; cells.length < GRID_SIZE; i++) {
-    cells.push({ date: i, isCurrentMonth: false, key: `n${i}` });
-  }
+  for (let i = 1; i <= daysInMonth; i++) cells.push({ date: i, isCurrentMonth: true, key: `c${i}` });
+  for (let i = 1; cells.length < GRID_SIZE; i++) cells.push({ date: i, isCurrentMonth: false, key: `n${i}` });
 
   const selectedKey = dateKey(selectedDate);
   const selectedEntries = entries[selectedKey] ?? [];
+
+  // Anniversaries for a given day
+  const getAnniversariesForDay = useCallback(
+    (d: number) => anniversaries.filter((a) => a.month === month + 1 && a.day === d),
+    [anniversaries, month],
+  );
 
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
@@ -158,29 +185,81 @@ export default function WritePage() {
     [entries, year, month],
   );
 
-  // Modal handlers
-  const openModal = () => {
+  // ── CRUD handlers ──
+  const openCreate = () => {
+    setModalMode('create');
+    setEditingId(null);
     setFormTarget('');
     setFormContent('');
     setSaved(false);
     setShowModal(true);
   };
+
+  const openEdit = (entry: Entry) => {
+    setModalMode('edit');
+    setEditingId(entry.id);
+    setFormTarget(entry.targetName ?? '');
+    setFormContent(entry.text);
+    setSaved(false);
+    setShowModal(true);
+  };
+
+  const openAnniversary = () => {
+    setModalMode('anniversary');
+    setAnnivName('');
+    setAnnivTarget('');
+    setSaved(false);
+    setShowModal(true);
+  };
+
   const closeModal = () => setShowModal(false);
 
   const handleSave = () => {
     if (!formContent.trim()) return;
     const key = selectedKey;
-    const newEntry: Entry = {
-      id: getNextId(entries),
-      text: formContent.trim(),
-      targetName: formTarget || undefined,
-    };
-    const updated: EntriesMap = {
-      ...entries,
-      [key]: [...(entries[key] ?? []), newEntry],
-    };
+    let updated: EntriesMap;
+
+    if (modalMode === 'edit' && editingId !== null) {
+      updated = {
+        ...entries,
+        [key]: (entries[key] ?? []).map((e) =>
+          e.id === editingId ? { ...e, text: formContent.trim(), targetName: formTarget || undefined } : e,
+        ),
+      };
+    } else {
+      const newEntry: Entry = { id: nextId(entries), text: formContent.trim(), targetName: formTarget || undefined };
+      updated = { ...entries, [key]: [...(entries[key] ?? []), newEntry] };
+    }
+
     setEntries(updated);
-    saveEntries(updated);
+    persist(updated);
+    setSaved(true);
+    setTimeout(() => setShowModal(false), 800);
+  };
+
+  const handleDelete = (entryId: number) => {
+    const key = selectedKey;
+    const filtered = (entries[key] ?? []).filter((e) => e.id !== entryId);
+    const updated: EntriesMap = { ...entries, [key]: filtered };
+    if (filtered.length === 0) delete updated[key];
+    setEntries(updated);
+    persist(updated);
+  };
+
+  const handleAnniversarySave = () => {
+    if (!annivName.trim() || !annivTarget) return;
+    const selMonth = selectedDate.getMonth() + 1;
+    const selDay = selectedDate.getDate();
+    const newAnniv: Anniversary = {
+      id: Date.now(),
+      name: annivName.trim(),
+      targetName: annivTarget,
+      month: selMonth,
+      day: selDay,
+    };
+    const updated = [...anniversaries, newAnniv];
+    setAnniversaries(updated);
+    persistAnniv(updated);
     setSaved(true);
     setTimeout(() => setShowModal(false), 800);
   };
@@ -188,49 +267,24 @@ export default function WritePage() {
   if (!hydrated) {
     return (
       <main className="demo-stage">
-        <section
-          className="phone-shell"
-          style={{ alignItems: 'center', justifyContent: 'center' }}
-        >
+        <section className="phone-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
         </section>
       </main>
     );
   }
 
+  const selectedAnnivs = getAnniversariesForDay(selectedDate.getDate());
+
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">
       <section className="phone-shell">
-        {/* Header with month navigation */}
+        {/* Header */}
         <header className="app-header" style={{ justifyContent: 'center', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button
-              onClick={prevMonth}
-              aria-label="이전 달"
-              style={{
-                background: 'transparent',
-                color: 'var(--foreground)',
-                padding: 8,
-                minWidth: 'auto',
-              }}
-            >
-              &lt;
-            </button>
-            <h1 style={{ fontSize: '1.5rem' }}>
-              {year}년 {month + 1}월
-            </h1>
-            <button
-              onClick={nextMonth}
-              aria-label="다음 달"
-              style={{
-                background: 'transparent',
-                color: 'var(--foreground)',
-                padding: 8,
-                minWidth: 'auto',
-              }}
-            >
-              &gt;
-            </button>
+            <button onClick={prevMonth} aria-label="이전 달" style={{ background: 'transparent', color: 'var(--foreground)', padding: 8, minWidth: 'auto' }}>&lt;</button>
+            <h1 style={{ fontSize: '1.5rem' }}>{year}년 {month + 1}월</h1>
+            <button onClick={nextMonth} aria-label="다음 달" style={{ background: 'transparent', color: 'var(--foreground)', padding: 8, minWidth: 'auto' }}>&gt;</button>
           </div>
         </header>
 
@@ -238,154 +292,75 @@ export default function WritePage() {
         <section className="calendar-panel" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <div className="calendar-grid">
             {DAYS_OF_WEEK.map((day, i) => (
-              <div
-                key={day}
-                className={`calendar-day-header ${i === 0 ? 'sun' : ''} ${i === 6 ? 'sat' : ''}`}
-              >
-                {day}
-              </div>
+              <div key={day} className={`calendar-day-header ${i === 0 ? 'sun' : ''} ${i === 6 ? 'sat' : ''}`}>{day}</div>
             ))}
-
             {cells.map((cell) => {
               const today = cell.isCurrentMonth && isToday(cell.date);
               const count = cell.isCurrentMonth ? entryCount(cell.date) : 0;
-              const isSelected =
-                cell.isCurrentMonth &&
-                cell.date === selectedDate.getDate() &&
-                month === selectedDate.getMonth() &&
-                year === selectedDate.getFullYear();
-
+              const hasAnniv = cell.isCurrentMonth && getAnniversariesForDay(cell.date).length > 0;
+              const isSelected = cell.isCurrentMonth && cell.date === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
               return (
                 <div
                   key={cell.key}
                   role="button"
                   tabIndex={cell.isCurrentMonth ? 0 : -1}
-                  onClick={() => {
-                    if (cell.isCurrentMonth) setSelectedDate(new Date(year, month, cell.date));
-                  }}
-                  className={[
-                    'calendar-cell',
-                    !cell.isCurrentMonth && 'faded',
-                    activityLevel(count),
-                    isSelected && 'selected',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
+                  onClick={() => { if (cell.isCurrentMonth) setSelectedDate(new Date(year, month, cell.date)); }}
+                  className={['calendar-cell', !cell.isCurrentMonth && 'faded', activityLevel(count), isSelected && 'selected'].filter(Boolean).join(' ')}
                   style={{ cursor: cell.isCurrentMonth ? 'pointer' : 'default' }}
                 >
                   <span className={`date-number ${today ? 'today' : ''}`}>{cell.date}</span>
+                  {hasAnniv && <span style={{ position: 'absolute', bottom: 1, fontSize: '0.5rem', lineHeight: 1, zIndex: 3 }}>🎉</span>}
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* Selected-day entries – notebook style from main */}
+        {/* Entries */}
         <section style={{ padding: '0 20px', flex: 1, overflowY: 'auto' }}>
-          <h3
-            style={{
-              fontSize: '1.125rem',
-              marginBottom: 12,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
+          <h3 style={{ fontSize: '1.125rem', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>
               {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 감사 기록
-              {selectedEntries.length > 0 && (
-                <span style={{ fontSize: '0.875rem', color: 'var(--accent)', marginLeft: 6 }}>
-                  ({selectedEntries.length}개)
-                </span>
-              )}
+              {selectedEntries.length > 0 && <span style={{ fontSize: '0.875rem', color: 'var(--accent)', marginLeft: 6 }}>({selectedEntries.length}개)</span>}
             </span>
-            <Link
-              href="/events/new"
-              style={{ fontSize: '0.875rem', color: 'var(--accent)', textDecoration: 'none' }}
-            >
-              + 기념일 등록
-            </Link>
+            <span onClick={openAnniversary} style={{ fontSize: '0.875rem', color: 'var(--accent)', cursor: 'pointer' }}>+ 기념일 등록</span>
           </h3>
+
+          {/* Anniversary badges for selected day */}
+          {selectedAnnivs.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {selectedAnnivs.map((a) => (
+                <span key={a.id} style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, background: 'rgba(255,230,200,0.9)', color: 'var(--accent-strong)', fontSize: '0.75rem', fontWeight: 700 }}>
+                  🎉 {a.name}: {a.targetName}
+                </span>
+              ))}
+            </div>
+          )}
 
           {selectedEntries.length > 0 ? (
             <div
               aria-label="선택한 날짜의 감사 기록"
-              style={{
-                position: 'relative',
-                overflow: 'hidden',
-                minHeight: 132,
-                padding: '18px 18px 18px 32px',
-                border: '1px solid rgba(115, 145, 132, 0.24)',
-                borderRadius: 14,
-                background:
-                  'linear-gradient(to bottom, transparent 31px, rgba(86, 123, 108, 0.14) 32px), #fffdf6',
-                backgroundSize: '100% 32px',
-                boxShadow: '0 8px 18px rgba(42, 68, 56, 0.06)',
-              }}
+              style={{ position: 'relative', overflow: 'hidden', minHeight: 80, padding: '18px 18px 18px 32px', border: '1px solid rgba(115,145,132,0.24)', borderRadius: 14, background: 'linear-gradient(to bottom, transparent 31px, rgba(86,123,108,0.14) 32px), #fffdf6', backgroundSize: '100% 32px', boxShadow: '0 8px 18px rgba(42,68,56,0.06)' }}
             >
-              <div
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  left: 20,
-                  top: 0,
-                  bottom: 0,
-                  width: 1,
-                  background: 'rgba(216, 118, 118, 0.38)',
-                }}
-              />
-
+              <div aria-hidden="true" style={{ position: 'absolute', left: 20, top: 0, bottom: 0, width: 1, background: 'rgba(216,118,118,0.38)' }} />
               {selectedEntries.map((entry, index) => (
-                <article
-                  key={entry.id}
-                  style={{
-                    position: 'relative',
-                    marginTop: index === 0 ? 0 : 18,
-                    paddingBottom: 2,
-                  }}
-                >
+                <article key={entry.id} style={{ position: 'relative', marginTop: index === 0 ? 0 : 18, paddingBottom: 2 }}>
+                  {/* Edit / Delete buttons */}
+                  <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: 4 }}>
+                    <button onClick={() => openEdit(entry)} style={{ minWidth: 'auto', padding: '2px 8px', fontSize: '0.6875rem', fontWeight: 600, borderRadius: 6, background: '#e2e8f0', color: '#64748b', border: 'none', cursor: 'pointer' }}>수정</button>
+                    <button onClick={() => handleDelete(entry.id)} style={{ minWidth: 'auto', padding: '2px 8px', fontSize: '0.6875rem', fontWeight: 600, borderRadius: 6, background: '#fee2e2', color: '#dc2626', border: 'none', cursor: 'pointer' }}>삭제</button>
+                  </div>
                   {entry.targetName && (
-                    <div
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        minHeight: 22,
-                        padding: '0 8px',
-                        borderRadius: 999,
-                        background: entry.isAnniversary
-                          ? 'rgba(255, 230, 200, 0.9)'
-                          : 'rgba(209, 235, 226, 0.9)',
-                        color: 'var(--accent-strong)',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        marginBottom: 6,
-                      }}
-                    >
+                    <div style={{ display: 'inline-flex', alignItems: 'center', minHeight: 22, padding: '0 8px', borderRadius: 999, background: entry.isAnniversary ? 'rgba(255,230,200,0.9)' : 'rgba(209,235,226,0.9)', color: 'var(--accent-strong)', fontSize: '0.75rem', fontWeight: 700, marginBottom: 6 }}>
                       {entry.isAnniversary ? '🎉 기념일' : '감사 대상'}: {entry.targetName}
                     </div>
                   )}
-                  <p
-                    style={{
-                      margin: 0,
-                      color: 'var(--foreground)',
-                      fontSize: '0.9375rem',
-                      lineHeight: '1.85',
-                    }}
-                  >
-                    {entry.text}
-                  </p>
+                  <p style={{ margin: 0, color: 'var(--foreground)', fontSize: '0.9375rem', lineHeight: '1.85', paddingRight: 80 }}>{entry.text}</p>
                 </article>
               ))}
             </div>
           ) : (
-            <div
-              style={{
-                textAlign: 'center',
-                padding: '32px 0',
-                color: 'var(--muted)',
-                fontSize: '0.9375rem',
-              }}
-            >
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted)', fontSize: '0.9375rem' }}>
               작성된 감사 일기가 없습니다.
             </div>
           )}
@@ -394,139 +369,71 @@ export default function WritePage() {
         {/* Quick compose */}
         <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
           <div>
-            <p className="panel-label">
-              {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
-            </p>
+            <p className="panel-label">{selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일</p>
             <h2 style={{ fontSize: '1.125rem' }}>오늘 감사한 일을 적어보세요</h2>
           </div>
-          <button type="button" onClick={openModal}>
-            작성
-          </button>
+          <button type="button" onClick={openCreate}>작성</button>
         </section>
 
         <BottomNav active="write" />
       </section>
 
-      {/* ── Write Modal ── */}
+      {/* ── Modal ── */}
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             {saved ? (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div style={{ fontSize: '3rem', marginBottom: 16 }}>✅</div>
-                <h2 style={{ color: 'var(--accent-strong)' }}>감사 일기가 저장되었습니다!</h2>
+                <h2 style={{ color: 'var(--accent-strong)' }}>
+                  {modalMode === 'anniversary' ? '기념일이 등록되었습니다!' : modalMode === 'edit' ? '수정이 완료되었습니다!' : '감사 일기가 저장되었습니다!'}
+                </h2>
                 <p style={{ marginTop: 8, fontSize: '0.875rem' }}>
-                  {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일에 기록됨
+                  {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
                 </p>
               </div>
-            ) : (
+            ) : modalMode === 'anniversary' ? (
               <>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 20,
-                  }}
-                >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div>
-                    <h2 style={{ fontSize: '1.25rem' }}>감사 일기 작성</h2>
-                    <p style={{ fontSize: '0.8125rem', marginTop: 4 }}>
-                      {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일에 기록합니다
-                    </p>
+                    <h2 style={{ fontSize: '1.25rem' }}>기념일 등록</h2>
+                    <p style={{ fontSize: '0.8125rem', marginTop: 4 }}>{selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일에 등록합니다</p>
                   </div>
-                  <button
-                    onClick={closeModal}
-                    style={{
-                      background: 'transparent',
-                      color: 'var(--muted)',
-                      minWidth: 'auto',
-                      padding: '4px 8px',
-                      fontSize: '1.25rem',
-                    }}
-                  >
-                    ✕
-                  </button>
+                  <button onClick={closeModal} style={{ background: 'transparent', color: 'var(--muted)', minWidth: 'auto', padding: '4px 8px', fontSize: '1.25rem' }}>✕</button>
                 </div>
-
                 <label style={{ display: 'block', marginBottom: 16 }}>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: 700,
-                      color: 'var(--accent-strong)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    감사 대상
-                  </span>
-                  <select
-                    value={formTarget}
-                    onChange={(e) => setFormTarget(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '12px 14px',
-                      border: '1px solid var(--border)',
-                      borderRadius: 12,
-                      background: 'var(--surface-strong)',
-                      color: 'var(--foreground)',
-                      font: 'inherit',
-                      fontSize: '0.9375rem',
-                    }}
-                  >
-                    {TARGET_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--accent-strong)', marginBottom: 8 }}>기념일 이름</span>
+                  <input value={annivName} onChange={(e) => setAnnivName(e.target.value)} placeholder="예: 로즈데이, 결혼기념일..." style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-strong)', color: 'var(--foreground)', font: 'inherit', fontSize: '0.9375rem' }} />
+                </label>
+                <label style={{ display: 'block', marginBottom: 20 }}>
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--accent-strong)', marginBottom: 8 }}>감사 대상</span>
+                  <select value={annivTarget} onChange={(e) => setAnnivTarget(e.target.value)} style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-strong)', color: 'var(--foreground)', font: 'inherit', fontSize: '0.9375rem' }}>
+                    {TARGET_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                   </select>
                 </label>
-
-                <label style={{ display: 'block', marginBottom: 20 }}>
-                  <span
-                    style={{
-                      display: 'block',
-                      fontSize: '0.875rem',
-                      fontWeight: 700,
-                      color: 'var(--accent-strong)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    감사한 일
-                  </span>
-                  <textarea
-                    value={formContent}
-                    onChange={(e) => setFormContent(e.target.value)}
-                    placeholder="오늘 감사했던 순간을 적어보세요..."
-                    rows={4}
-                    style={{
-                      width: '100%',
-                      padding: '14px',
-                      border: '1px solid var(--border)',
-                      borderRadius: 12,
-                      background: 'var(--surface-strong)',
-                      color: 'var(--foreground)',
-                      font: 'inherit',
-                      fontSize: '0.9375rem',
-                      resize: 'vertical',
-                      lineHeight: 1.6,
-                    }}
-                  />
+                <button type="button" onClick={handleAnniversarySave} disabled={!annivName.trim() || !annivTarget} style={{ width: '100%', padding: '14px', fontSize: '1rem', opacity: annivName.trim() && annivTarget ? 1 : 0.5 }}>등록하기</button>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.25rem' }}>{modalMode === 'edit' ? '감사 일기 수정' : '감사 일기 작성'}</h2>
+                    <p style={{ fontSize: '0.8125rem', marginTop: 4 }}>{selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일에 기록합니다</p>
+                  </div>
+                  <button onClick={closeModal} style={{ background: 'transparent', color: 'var(--muted)', minWidth: 'auto', padding: '4px 8px', fontSize: '1.25rem' }}>✕</button>
+                </div>
+                <label style={{ display: 'block', marginBottom: 16 }}>
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--accent-strong)', marginBottom: 8 }}>감사 대상</span>
+                  <select value={formTarget} onChange={(e) => setFormTarget(e.target.value)} style={{ width: '100%', padding: '12px 14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-strong)', color: 'var(--foreground)', font: 'inherit', fontSize: '0.9375rem' }}>
+                    {TARGET_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                  </select>
                 </label>
-
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={!formContent.trim()}
-                  style={{
-                    width: '100%',
-                    padding: '14px',
-                    fontSize: '1rem',
-                    opacity: formContent.trim() ? 1 : 0.5,
-                  }}
-                >
-                  저장하기
+                <label style={{ display: 'block', marginBottom: 20 }}>
+                  <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, color: 'var(--accent-strong)', marginBottom: 8 }}>감사한 일</span>
+                  <textarea value={formContent} onChange={(e) => setFormContent(e.target.value)} placeholder="오늘 감사했던 순간을 적어보세요..." rows={4} style={{ width: '100%', padding: '14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface-strong)', color: 'var(--foreground)', font: 'inherit', fontSize: '0.9375rem', resize: 'vertical', lineHeight: 1.6 }} />
+                </label>
+                <button type="button" onClick={handleSave} disabled={!formContent.trim()} style={{ width: '100%', padding: '14px', fontSize: '1rem', opacity: formContent.trim() ? 1 : 0.5 }}>
+                  {modalMode === 'edit' ? '수정하기' : '저장하기'}
                 </button>
               </>
             )}
