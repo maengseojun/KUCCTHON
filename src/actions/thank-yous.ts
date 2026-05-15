@@ -1,60 +1,64 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
+import {
+  getThankYouList,
+  insertThankYou,
+  type ThankYou,
+} from '@/lib/queries/thank-yous';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export type ThankYouActionResult = {
+  error: string | null;
+  data?: ThankYou;
+};
 
-export interface ThankYou {
-  from_id: string;
-  to_id: string;
-  created_at: string;
-  content: string;
-}
-
-export async function getThankYouList(): Promise<ThankYou[]> {
-  try {
-    const { data, error } = await supabase
-      .from('thank_yous')
-      .select('from_id, to_id, created_at, content')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to fetch thank you list: ${error.message}`);
-    }
-
-    return data || [];
-  } catch (error) {
-    console.error('Error fetching thank you list:', error);
-    throw error;
-  }
-}
-
-export async function insertThankYou(
+function validateThankYouInput(
   from_id: string,
   to_id: string,
   content: string
-): Promise<ThankYou> {
+): { from_id: string; to_id: string; content: string } | ThankYouActionResult {
+  if (typeof from_id !== 'string' || from_id.trim() === '') {
+    return { error: '보낸 사람을 입력해 주세요.', data: undefined };
+  }
+
+  if (typeof to_id !== 'string' || to_id.trim() === '') {
+    return { error: '받을 사람을 입력해 주세요.', data: undefined };
+  }
+
+  if (typeof content !== 'string' || content.trim() === '') {
+    return { error: '감사 메시지를 입력해 주세요.', data: undefined };
+  }
+
+  return {
+    from_id: from_id.trim(),
+    to_id: to_id.trim(),
+    content: content.trim(),
+  };
+}
+
+export async function fetchThankYouList(): Promise<ThankYou[]> {
+  return getThankYouList();
+}
+
+export async function createThankYou(
+  from_id: string,
+  to_id: string,
+  content: string
+): Promise<ThankYouActionResult> {
+  const validated = validateThankYouInput(from_id, to_id, content);
+
+  if ('error' in validated) {
+    return validated;
+  }
+
   try {
-    const { data, error } = await supabase
-      .from('thank_yous')
-      .insert({
-        from_id,
-        to_id,
-        content,
-      })
-      .select('from_id, to_id, created_at, content')
-      .single();
+    const data = await insertThankYou(
+      validated.from_id,
+      validated.to_id,
+      validated.content
+    );
 
-    if (error) {
-      throw new Error(`Failed to insert thank you: ${error.message}`);
-    }
-
-    return data;
+    return { error: null, data };
   } catch (error) {
-    console.error('Error inserting thank you:', error);
-    throw error;
+    return { error: '감사 메시지 저장에 실패했습니다. 다시 시도해 주세요.', data: undefined };
   }
 }
