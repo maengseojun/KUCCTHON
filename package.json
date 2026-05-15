@@ -20,6 +20,7 @@
     "test:watch": "./scripts/run_with_npm_version.sh vitest",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test",
     "bootstrap": "./scripts/bootstrap_dev.sh",
+    "env:local": "./scripts/sync_local_env.sh",
     "supabase:start": "./scripts/run_with_npm_version.sh supabase start",
     "supabase:stop": "./scripts/run_with_npm_version.sh supabase stop",
     "supabase:reset": "./scripts/run_with_npm_version.sh supabase db reset",
