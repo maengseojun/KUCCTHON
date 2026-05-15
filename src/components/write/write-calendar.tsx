@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, useTransition, type TouchEvent } from 'react';
 
@@ -270,12 +269,33 @@ export function WriteCalendar({ targets, events, thankYous }: WriteCalendarProps
             <span>
               {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
             </span>
-            <Link
-              href="/events/new"
-              style={{ color: 'var(--accent)', fontSize: '0.875rem', textDecoration: 'none' }}
-            >
-              + 일정 등록
-            </Link>
+            {canWrite ? (
+              <button
+                onClick={openModal}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--accent)',
+                  minWidth: 0,
+                  padding: 0,
+                }}
+                type="button"
+              >
+                + 작성하기
+              </button>
+            ) : (
+              <button
+                onClick={() => router.push('/targets')}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--accent)',
+                  minWidth: 0,
+                  padding: 0,
+                }}
+                type="button"
+              >
+                + 대상 추가
+              </button>
+            )}
           </h3>
           {groupedByTarget.length === 0 &&
           otherThankYous.length === 0 &&
@@ -350,21 +370,6 @@ export function WriteCalendar({ targets, events, thankYous }: WriteCalendarProps
               </article>
             ) : null}
           </div>
-        </section>
-        <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
-          <div>
-            <p className="panel-label">오늘의 감사</p>
-            <h2 style={{ fontSize: '1.125rem' }}>오늘 감사한 일을 적어보세요</h2>
-          </div>
-          {canWrite ? (
-            <button onClick={openModal} type="button">
-              작성
-            </button>
-          ) : (
-            <Link href="/targets">
-              <button type="button">대상 추가</button>
-            </Link>
-          )}
         </section>
         <BottomNav active="write" />
       </section>

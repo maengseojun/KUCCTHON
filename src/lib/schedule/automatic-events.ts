@@ -1,4 +1,9 @@
-import { getYearlyOccurrenceDate, getYearlyOccurrenceOnOrAfter } from '@/lib/dates/date-key';
+import { AUTOMATIC_ANNIVERSARY_PRESETS } from '@/lib/constants/automatic-events';
+import {
+  getYearlyOccurrenceDate,
+  getYearlyOccurrenceOnOrAfter,
+  toDateKey,
+} from '@/lib/dates/date-key';
 import type { EventCategory, EventWithTarget } from '@/types/event';
 import type { Target } from '@/types/target';
 
@@ -109,6 +114,22 @@ export function getAutomaticEventsForTarget(target: Target): ScheduleEvent[] {
       );
     }
   }
+
+  AUTOMATIC_ANNIVERSARY_PRESETS.filter((preset) =>
+    preset.targetTypes.includes(target.type)
+  ).forEach((preset) => {
+    events.push(
+      buildAutomaticEvent({
+        id: `auto:seasonal:${target.id}:${preset.month}-${preset.day}`,
+        target,
+        title: `${target.name} ${preset.label}`,
+        eventDate: toDateKey(2000, preset.month, preset.day),
+        category: 'anniversary',
+        recursYearly: true,
+        notifyDaysBefore: preset.notifyDaysBefore,
+      })
+    );
+  });
 
   return events;
 }

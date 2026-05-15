@@ -20,12 +20,33 @@ const baseTarget: Target = {
   created_at: '2026-01-01T00:00:00.000Z',
 };
 
+const parentTarget: Target = {
+  id: 'target-2',
+  user_id: 'user-1',
+  name: '엄마',
+  type: 'parent',
+  memo: null,
+  birthday: '1970-05-16',
+  marriage_anniversary: '2000-05-16',
+  relationship_started_on: null,
+  thank_you_count: 0,
+  created_at: '2026-01-01T00:00:00.000Z',
+};
+
 describe('automatic events', () => {
-  it('creates birthday, 100-day milestones, and yearly relationship anniversaries', () => {
+  it('creates birthday, seasonal anniversaries, 100-day milestones, and yearly relationship anniversaries for partners', () => {
     const events = getAutomaticEventsForTarget(baseTarget);
 
     expect(
       events.some((event) => event.title === '지수 생일' && event.notify_days_before[0] === 3)
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) => event.title === '지수 발렌타인데이' && event.event_date === '2000-02-14'
+      )
+    ).toBe(true);
+    expect(
+      events.some((event) => event.title === '지수 허그데이' && event.event_date === '2000-12-14')
     ).toBe(true);
     expect(
       events.some((event) => event.title === '지수 100일' && event.event_date === '2026-04-10')
@@ -33,6 +54,20 @@ describe('automatic events', () => {
     expect(
       events.some((event) => event.title === '지수 1주년' && event.event_date === '2027-01-01')
     ).toBe(true);
+  });
+
+  it('creates parent-only seasonal anniversaries and marriage anniversary for parents', () => {
+    const events = getAutomaticEventsForTarget(parentTarget);
+
+    expect(
+      events.some((event) => event.title === '엄마 어버이날' && event.event_date === '2000-05-08')
+    ).toBe(true);
+    expect(
+      events.some(
+        (event) => event.title === '엄마 결혼 기념일' && event.event_date === '2000-05-16'
+      )
+    ).toBe(true);
+    expect(events.some((event) => event.title === '엄마 키스데이')).toBe(false);
   });
 
   it('prefers a manual event when it overlaps an automatic event for the same target/category/date', () => {

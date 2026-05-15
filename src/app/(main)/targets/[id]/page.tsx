@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { TargetThankYouForm } from '@/components/targets/target-thank-you-form';
 import { formatReminderDays } from '@/lib/constants/reminders';
-import { SUGGESTED_EVENTS } from '@/lib/constants/suggested-events';
 import { getEventsByTargetId } from '@/lib/queries/events';
 import { getTargetById } from '@/lib/queries/targets';
 import { getThankYousByTargetId } from '@/lib/queries/thank-yous';
@@ -86,12 +85,6 @@ export default async function TargetDetailPage({ params, searchParams }: TargetD
               </article>
             ))
           )}
-        </section>
-
-        <section className="hero-panel" aria-label="추천 일정">
-          <p className="panel-label">Recommended setup</p>
-          <h2>{TARGET_TYPE_LABELS[target.type]}에게 필요한 날짜</h2>
-          <p>{SUGGESTED_EVENTS[target.type].map((event) => event.label).join(', ')}</p>
         </section>
 
         <section className="activity-list" aria-label="저장된 일정">
