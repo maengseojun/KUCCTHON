@@ -216,3 +216,99 @@ button {
     border-radius: 0;
   }
 }
+
+/* ── Calendar (Write page) ── */
+
+.calendar-panel {
+  margin: 0 16px;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px 4px;
+}
+
+.calendar-day-header {
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.875rem;
+  padding-bottom: 8px;
+  color: var(--muted);
+}
+
+.calendar-day-header.sun {
+  color: #e53e3e;
+}
+
+.calendar-day-header.sat {
+  color: #3182ce;
+}
+
+.calendar-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-radius: 50%;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.calendar-cell.faded {
+  color: #cbd5e0;
+}
+
+.date-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.date-number.today {
+  border: 2px solid var(--accent-strong);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.calendar-cell.activity-light::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--accent-soft);
+  border-radius: 50%;
+}
+
+.calendar-cell.activity-dark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--accent);
+  border-radius: 50%;
+}
+
+.calendar-cell.activity-dark .date-number {
+  color: #ffffff;
+}
+
+.calendar-cell.activity-light .date-number {
+  color: var(--accent-strong);
+}
+
+.calendar-cell.selected::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px dashed var(--accent-strong);
+  border-radius: 50%;
+  z-index: 2;
+}
