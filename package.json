@@ -15,7 +15,7 @@
     "lint:fix": "./scripts/run_with_npm_version.sh eslint --fix .",
     "format": "./scripts/run_with_npm_version.sh prettier --write .",
     "format:check": "./scripts/run_with_npm_version.sh prettier --check .",
-    "typecheck": "./scripts/run_with_npm_version.sh tsc --noEmit",
+    "typecheck": "./scripts/run_with_npm_version.sh next typegen && ./scripts/run_with_npm_version.sh tsc --noEmit",
     "test": "./scripts/run_with_npm_version.sh vitest run --passWithNoTests",
     "test:watch": "./scripts/run_with_npm_version.sh vitest",
     "test:e2e": "./scripts/run_with_npm_version.sh playwright test",
