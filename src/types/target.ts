@@ -16,6 +16,8 @@ export type Target = {
   type: TargetType;
   memo: string | null;
   birthday: string | null;
+  marriage_anniversary: string | null;
+  relationship_started_on: string | null;
   thank_you_count: number;
   created_at: string;
 };
@@ -25,4 +27,6 @@ export type CreateTargetInput = {
   type: TargetType;
   memo?: string | null;
   birthday?: string | null;
+  marriage_anniversary?: string | null;
+  relationship_started_on?: string | null;
 };

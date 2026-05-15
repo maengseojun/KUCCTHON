@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { createThankYouForTarget } from '@/actions/thank-yous';
 import { BottomNav } from '@/components/nav/bottom-nav';
-import { getCelebrationsByTargetType } from '@/lib/constants/celebrations';
+import { TargetThankYouForm } from '@/components/targets/target-thank-you-form';
+import { formatReminderDays } from '@/lib/constants/reminders';
 import { SUGGESTED_EVENTS } from '@/lib/constants/suggested-events';
 import { getEventsByTargetId } from '@/lib/queries/events';
 import { getTargetById } from '@/lib/queries/targets';
 import { getThankYousByTargetId } from '@/lib/queries/thank-yous';
+import { getScheduleEventsForTarget } from '@/lib/schedule/automatic-events';
 import { EVENT_CATEGORY_LABELS } from '@/types/event';
 import { TARGET_TYPE_LABELS } from '@/types/target';
 
@@ -36,7 +37,11 @@ export default async function TargetDetailPage({ params, searchParams }: TargetD
     notFound();
   }
 
-  const celebrations = getCelebrationsByTargetType(target.type);
+  const scheduleEvents = getScheduleEventsForTarget(
+    target,
+    events,
+    new Date().toISOString().slice(0, 10)
+  );
 
   return (
     <main className="demo-stage" aria-label="감사 대상 상세">
@@ -51,84 +56,44 @@ export default async function TargetDetailPage({ params, searchParams }: TargetD
           </Link>
         </header>
 
-        {/* Summary */}
         <section className="hero-panel" aria-label="대상 요약">
           <p className="panel-label">Summary</p>
           <h2>감사 {target.thank_you_count}회 작성</h2>
-          {target.birthday ? <p>🎂 생년월일: {target.birthday}</p> : null}
+          {target.birthday ? <p>🎂 생일: {target.birthday}</p> : null}
+          {target.marriage_anniversary ? (
+            <p>💍 결혼 기념일: {target.marriage_anniversary}</p>
+          ) : null}
+          {target.relationship_started_on ? (
+            <p>💚 사귀기 시작한 날: {target.relationship_started_on}</p>
+          ) : null}
           {target.memo ? <p>📝 {target.memo}</p> : null}
         </section>
 
-        {/* 감사 메시지 작성 */}
-        <section className="activity-list" aria-label="감사 메시지 작성" style={{ gap: 14 }}>
-          <h2>감사 메시지 작성</h2>
-          <form action={createThankYouForTarget} style={{ display: 'grid', gap: 12 }}>
-            <input name="target_id" type="hidden" value={target.id} />
-            <textarea
-              name="content"
-              placeholder="감사한 마음을 적어보세요..."
-              required
-              rows={3}
-              style={{
-                width: '100%',
-                border: '1px solid var(--border)',
-                borderRadius: 16,
-                background: 'var(--surface-strong)',
-                color: 'var(--foreground)',
-                font: 'inherit',
-                padding: '12px 14px',
-                resize: 'vertical',
-              }}
-            />
+        <TargetThankYouForm errorMessage={errorMessage} targetId={target.id} />
 
-            {errorMessage ? (
-              <p
-                role="alert"
-                style={{
-                  borderRadius: 16,
-                  background: '#fff1ed',
-                  color: '#9a3412',
-                  fontSize: '0.875rem',
-                  lineHeight: 1.4,
-                  padding: '10px 12px',
-                }}
-              >
-                {errorMessage}
-              </p>
-            ) : null}
-
-            <button type="submit">감사 저장</button>
-          </form>
-        </section>
-
-        {/* 감사 기록 목록 */}
         <section className="activity-list" aria-label="감사 기록">
           <h2>감사 기록 ({thankYous.length})</h2>
           {thankYous.length === 0 ? (
             <p>아직 작성한 감사 기록이 없습니다.</p>
           ) : (
-            thankYous.map((ty) => (
-              <article key={ty.id} className="activity-item">
+            thankYous.map((thankYou) => (
+              <article key={thankYou.id} className="activity-item">
                 <span className="avatar">💌</span>
                 <div>
-                  <p>{ty.content}</p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                    {new Date(ty.created_at).toLocaleDateString('ko-KR')}
-                  </p>
+                  <p>{thankYou.content}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{thankYou.date}</p>
                 </div>
               </article>
             ))
           )}
         </section>
 
-        {/* 추천 일정 */}
         <section className="hero-panel" aria-label="추천 일정">
           <p className="panel-label">Recommended setup</p>
           <h2>{TARGET_TYPE_LABELS[target.type]}에게 필요한 날짜</h2>
           <p>{SUGGESTED_EVENTS[target.type].map((event) => event.label).join(', ')}</p>
         </section>
 
-        {/* 저장된 일정 */}
         <section className="activity-list" aria-label="저장된 일정">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h2>저장된 일정</h2>
@@ -137,38 +102,25 @@ export default async function TargetDetailPage({ params, searchParams }: TargetD
             </Link>
           </div>
 
-          {events.length === 0 ? (
+          {scheduleEvents.length === 0 ? (
             <p>아직 연결된 일정이 없습니다.</p>
           ) : (
-            events.map((event) => (
+            scheduleEvents.map((event) => (
               <article key={event.id} className="activity-item">
-                <span className="avatar">{event.event_date.slice(5, 7)}</span>
+                <span className={event.isAutomatic ? 'avatar accent' : 'avatar'}>
+                  {event.event_date.slice(5, 7)}
+                </span>
                 <div>
                   <strong>{event.title}</strong>
                   <p>
-                    {event.event_date} · {EVENT_CATEGORY_LABELS[event.category]} · D-
-                    {event.notify_days_before}
+                    {event.event_date} · {EVENT_CATEGORY_LABELS[event.category]} ·{' '}
+                    {formatReminderDays(event.notify_days_before)}
+                    {event.isAutomatic ? ' · 자동 추가' : ''}
                   </p>
                 </div>
               </article>
             ))
           )}
-        </section>
-
-        {/* 자동 기념일 */}
-        <section className="activity-list" aria-label="자동 기념일">
-          <h2>자동 기념일</h2>
-          {celebrations.map((celebration) => (
-            <article key={`${celebration.month}-${celebration.day}`} className="activity-item">
-              <span className="avatar accent">{celebration.month}</span>
-              <div>
-                <strong>{celebration.name}</strong>
-                <p>
-                  {celebration.month}/{celebration.day} · 유형 기반 자동 표시
-                </p>
-              </div>
-            </article>
-          ))}
         </section>
 
         <BottomNav active="targets" />

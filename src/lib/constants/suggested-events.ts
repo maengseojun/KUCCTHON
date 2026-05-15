@@ -9,7 +9,7 @@ export type SuggestedEvent = {
     month: number;
     day: number;
   };
-  defaultNotifyDaysBefore: number;
+  defaultNotifyDaysBefore: number[];
 };
 
 export const SUGGESTED_EVENTS: Record<TargetType, SuggestedEvent[]> = {
@@ -18,13 +18,13 @@ export const SUGGESTED_EVENTS: Record<TargetType, SuggestedEvent[]> = {
       label: '생일',
       category: 'birthday',
       requiresDate: true,
-      defaultNotifyDaysBefore: 3,
+      defaultNotifyDaysBefore: [3],
     },
     {
       label: '사귀기 시작한 날',
       category: 'anniversary',
       requiresDate: true,
-      defaultNotifyDaysBefore: 7,
+      defaultNotifyDaysBefore: [7],
     },
   ],
   parent: [
@@ -32,20 +32,13 @@ export const SUGGESTED_EVENTS: Record<TargetType, SuggestedEvent[]> = {
       label: '생일',
       category: 'birthday',
       requiresDate: true,
-      defaultNotifyDaysBefore: 3,
+      defaultNotifyDaysBefore: [3],
     },
     {
       label: '결혼 기념일',
       category: 'anniversary',
       requiresDate: true,
-      defaultNotifyDaysBefore: 7,
-    },
-    {
-      label: '어버이날',
-      category: 'memorial',
-      requiresDate: false,
-      fixedDate: { month: 5, day: 8 },
-      defaultNotifyDaysBefore: 3,
+      defaultNotifyDaysBefore: [7],
     },
   ],
   friend: [
@@ -53,7 +46,7 @@ export const SUGGESTED_EVENTS: Record<TargetType, SuggestedEvent[]> = {
       label: '생일',
       category: 'birthday',
       requiresDate: true,
-      defaultNotifyDaysBefore: 3,
+      defaultNotifyDaysBefore: [3],
     },
   ],
   other: [
@@ -61,7 +54,7 @@ export const SUGGESTED_EVENTS: Record<TargetType, SuggestedEvent[]> = {
       label: '기념일',
       category: 'custom',
       requiresDate: true,
-      defaultNotifyDaysBefore: 3,
+      defaultNotifyDaysBefore: [3],
     },
   ],
 };

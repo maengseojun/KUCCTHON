@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 
 import { createEvent } from '@/actions/events';
+import { REMINDER_DAY_OPTIONS } from '@/lib/constants/reminders';
 import { SUGGESTED_EVENTS, type SuggestedEvent } from '@/lib/constants/suggested-events';
-import { toDateKey } from '@/lib/calendar/dates';
+import { toDateKey } from '@/lib/dates/date-key';
 import { EVENT_CATEGORIES, EVENT_CATEGORY_LABELS, type EventCategory } from '@/types/event';
 import type { Target } from '@/types/target';
 
@@ -25,31 +26,30 @@ const inputStyle = {
   padding: '12px 14px',
 };
 
-function getDefaultDate() {
-  return '';
-}
-
 export function EventForm({ targets, errorMessage }: EventFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [clientError, setClientError] = useState<string | null>(null);
   const [selectedTargetId, setSelectedTargetId] = useState(targets[0]?.id ?? '');
   const [title, setTitle] = useState('');
-  const [eventDate, setEventDate] = useState(getDefaultDate);
+  const [eventDate, setEventDate] = useState('');
   const [category, setCategory] = useState<EventCategory>('birthday');
-  const [notifyDays, setNotifyDays] = useState(3);
+  const [notifyDays, setNotifyDays] = useState<number[]>([3]);
   const [recursYearly, setRecursYearly] = useState(true);
 
   const selectedTarget = targets.find((target) => target.id === selectedTargetId);
-  const suggestions = selectedTarget ? SUGGESTED_EVENTS[selectedTarget.type] : [];
+  const suggestions = selectedTarget
+    ? SUGGESTED_EVENTS[selectedTarget.type].filter((suggestion) => {
+        if (suggestion.label === '생일') return !selectedTarget.birthday;
+        if (suggestion.label === '결혼 기념일') return !selectedTarget.marriage_anniversary;
+        if (suggestion.label === '사귀기 시작한 날') return !selectedTarget.relationship_started_on;
+        return true;
+      })
+    : [];
   const visibleError = clientError ?? errorMessage;
 
   function applySuggestion(suggestion: SuggestedEvent) {
-    const nextTitle = selectedTarget
-      ? `${selectedTarget.name} ${suggestion.label}`
-      : suggestion.label;
-
-    setTitle(nextTitle);
+    setTitle(selectedTarget ? `${selectedTarget.name} ${suggestion.label}` : suggestion.label);
     setCategory(suggestion.category);
     setNotifyDays(suggestion.defaultNotifyDaysBefore);
     setRecursYearly(true);
@@ -62,15 +62,12 @@ export function EventForm({ targets, errorMessage }: EventFormProps) {
 
   function submitEvent(formData: FormData) {
     setClientError(null);
-
     startTransition(async () => {
       const result = await createEvent(formData);
-
       if (result.error) {
         setClientError(result.error);
         return;
       }
-
       router.push('/targets');
     });
   }
@@ -180,21 +177,46 @@ export function EventForm({ targets, errorMessage }: EventFormProps) {
           </select>
         </label>
 
-        <label style={{ display: 'grid', gap: 8 }}>
+        <fieldset style={{ display: 'grid', gap: 8, border: 0, padding: 0, margin: 0 }}>
           <span className="panel-label" style={{ marginBottom: 0 }}>
-            Notify
+            미리 알림
           </span>
-          <input
-            max={30}
-            min={0}
-            name="notify_days_before"
-            onChange={(event) => setNotifyDays(Number(event.target.value))}
-            required
-            style={inputStyle}
-            type="number"
-            value={notifyDays}
-          />
-        </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {REMINDER_DAY_OPTIONS.map((day) => {
+              const checked = notifyDays.includes(day);
+              return (
+                <label
+                  key={day}
+                  style={{
+                    alignItems: 'center',
+                    background: checked ? 'var(--accent-soft)' : 'var(--surface-strong)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 999,
+                    color: checked ? 'var(--accent-strong)' : 'var(--foreground)',
+                    display: 'inline-flex',
+                    gap: 6,
+                    padding: '9px 12px',
+                  }}
+                >
+                  <input
+                    checked={checked}
+                    name="notify_days_before"
+                    onChange={() =>
+                      setNotifyDays((current) =>
+                        current.includes(day)
+                          ? current.filter((value) => value !== day)
+                          : [...current, day].sort((a, b) => a - b)
+                      )
+                    }
+                    type="checkbox"
+                    value={day}
+                  />
+                  <span>{day}일 전</span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <input

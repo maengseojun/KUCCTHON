@@ -327,6 +327,17 @@ button {
   color: var(--accent-strong);
 }
 
+.calendar-cell .anniversary-marker {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f59e0b;
+  z-index: 3;
+}
+
 .calendar-cell.selected::after {
   content: '';
   position: absolute;

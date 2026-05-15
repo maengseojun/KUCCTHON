@@ -19,7 +19,7 @@ export type Event = {
   event_date: string;
   category: EventCategory;
   recurs_yearly: boolean;
-  notify_days_before: number;
+  notify_days_before: number[];
   memo: string | null;
   created_at: string;
 };
@@ -34,6 +34,6 @@ export type CreateEventInput = {
   event_date: string;
   category: EventCategory;
   recurs_yearly?: boolean;
-  notify_days_before?: number;
+  notify_days_before?: number[];
   memo?: string | null;
 };
