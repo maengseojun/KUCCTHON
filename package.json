@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "name": "kuccthon",
   "version": "0.1.0",
@@ -49,3 +50,57 @@
     "postcss": "8.5.10"
   }
 }
+=======
+{
+  "name": "kuccthon",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@10.9.7",
+  "engines": {
+    "node": "22.22.2",
+    "npm": "10.9.7"
+  },
+  "scripts": {
+    "dev": "./scripts/run_with_npm_version.sh next dev",
+    "build": "./scripts/run_with_npm_version.sh next build",
+    "start": "./scripts/run_with_npm_version.sh next start",
+    "lint": "./scripts/run_with_npm_version.sh eslint .",
+    "lint:fix": "./scripts/run_with_npm_version.sh eslint --fix .",
+    "format": "./scripts/run_with_npm_version.sh prettier --write .",
+    "format:check": "./scripts/run_with_npm_version.sh prettier --check .",
+    "typecheck": "./scripts/run_with_npm_version.sh next typegen && ./scripts/run_with_npm_version.sh tsc --noEmit",
+    "test": "./scripts/run_with_npm_version.sh vitest run --passWithNoTests",
+    "test:watch": "./scripts/run_with_npm_version.sh vitest",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test",
+    "bootstrap": "./scripts/bootstrap_dev.sh",
+    "env:local": "./scripts/sync_local_env.sh",
+    "supabase:start": "./scripts/run_with_npm_version.sh supabase start",
+    "supabase:stop": "./scripts/run_with_npm_version.sh supabase stop",
+    "supabase:reset": "./scripts/run_with_npm_version.sh supabase db reset",
+    "db:types": "./scripts/run_with_npm_version.sh supabase gen types typescript --local > src/database.types.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "0.10.3",
+    "@supabase/supabase-js": "2.105.4",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "25.8.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "eslint-config-prettier": "10.1.8",
+    "jsdom": "29.1.1",
+    "prettier": "3.8.3",
+    "supabase": "2.98.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.6"
+  },
+  "overrides": {
+    "postcss": "8.5.10"
+  }
+}
+>>>>>>> 220b9cdfd9d350e4ddbc5c1875670f79c552f8af

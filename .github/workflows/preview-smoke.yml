@@ -1,0 +1,50 @@
+name: Preview Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: Vercel preview or production URL to smoke test
+        required: true
+        type: string
+  repository_dispatch:
+    types:
+      - vercel.deployment.success
+
+concurrency:
+  group: preview-smoke-${{ github.event_name }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: HTTP Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Resolve URL
+        id: target
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            url="${{ github.event.client_payload.url }}"
+          else
+            url="${{ inputs.preview_url }}"
+          fi
+
+          url="${url%/}"
+          if [ -z "$url" ]; then
+            echo "Missing preview URL." >&2
+            exit 1
+          fi
+
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Check app shell
+        run: curl --fail --silent --show-error --max-time 20 "${{ steps.target.outputs.url }}/" > /dev/null
+
+      - name: Check health endpoint
+        run: |
+          curl --fail --silent --show-error --max-time 20 \
+            "${{ steps.target.outputs.url }}/api/health" \
+            | tee health.json
+          grep -q '"status":"ok"' health.json
