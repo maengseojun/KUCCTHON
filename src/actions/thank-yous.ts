@@ -1,10 +1,6 @@
 'use server';
 
-import {
-  getThankYouList,
-  insertThankYou,
-  type ThankYou,
-} from '@/lib/queries/thank-yous';
+import { getThankYouList, insertThankYou, type ThankYou } from '@/lib/queries/thank-yous';
 
 export type ThankYouActionResult = {
   error: string | null;
@@ -51,14 +47,10 @@ export async function createThankYou(
   }
 
   try {
-    const data = await insertThankYou(
-      validated.from_id,
-      validated.to_id,
-      validated.content
-    );
+    const data = await insertThankYou(validated.from_id, validated.to_id, validated.content);
 
     return { error: null, data };
-  } catch (error) {
+  } catch {
     return { error: '감사 메시지 저장에 실패했습니다. 다시 시도해 주세요.', data: undefined };
   }
 }
