@@ -1,13 +1,7 @@
 # KUCCTHON
 
-Team 3: Wild Newbies의 2026 KUCC 해커톤 프로젝트입니다. 이 저장소는 아직 기능 구현 단계가 아니라, Next.js, Supabase, Vercel 기반 MVP를 안정적으로 개발하기 위한 초기 개발 기반입니다.
-
+2026 KUCC 해커톤 프로젝트입니다. 
 ## 현재 범위
-
-- 포함: 프로젝트 scaffold, 버전 고정, npm lockfile, lint/format/typecheck/test/build, GitHub Actions, PR 템플릿, 환경 변수 표준
-- 제외: 실제 기능 페이지, Supabase DB schema, Realtime 구독, UI/UX 상세 구현, PWA, 배포 자동화 완성
-
-`src` 내부는 빌드 검증을 위한 최소 Next.js 파일만 포함합니다. 기능 구조는 MVP 구현 단계에서 별도로 확정합니다.
 
 첫 화면은 발표 데모를 고려해 일반 웹 랜딩 페이지가 아니라 모바일 앱 shell처럼 보이도록 유지합니다. 실제 기능 라우트가 추가되기 전까지도 상단바, 앱 카드, 하단 탭의 시각적 기준을 확인할 수 있어야 합니다.
 
