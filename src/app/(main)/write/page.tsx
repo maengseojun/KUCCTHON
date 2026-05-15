@@ -20,22 +20,6 @@ type ThankYouRow = {
   to_id: string;
 };
 
-const mockEntries: Record<string, Entry[]> = {
-  '2026-5-3': [{ id: 1, text: '오랜만에 만난 친구가 커피를 사주었다.' }],
-  '2026-5-5': [
-    { id: 2, text: '어린이날 기념으로 동생과 재미있게 놀았다.' },
-    { id: 3, text: '날씨가 너무 맑아서 기분이 좋았다.' },
-  ],
-  '2026-5-10': [
-    { id: 4, text: '팀원들이 다 같이 밤새며 프로젝트를 완성했다! 너무 고마운 팀원들.' },
-  ],
-  '2026-5-14': [
-    { id: 5, text: '로즈데이 기념으로 꽃을 받았다.', isAnniversary: true, targetName: '연인' },
-    { id: 6, text: '지하철에 바로 자리가 나서 편하게 왔다.' },
-  ],
-  '2026-5-16': [{ id: 7, text: '새로운 캘린더 기능을 멋지게 구현했다.' }],
-};
-
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const GRID_SIZE = 42; // 7 × 6
 
@@ -62,7 +46,7 @@ export default function WritePage() {
   const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [entriesByDate, setEntriesByDate] = useState<Record<string, Entry[]>>(mockEntries);
+  const [entriesByDate, setEntriesByDate] = useState<Record<string, Entry[]>>({});
 
   const year = baseDate.getFullYear();
   const month = baseDate.getMonth(); // 0-indexed
