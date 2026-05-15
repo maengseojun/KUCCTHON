@@ -2,7 +2,7 @@
   "name": "KUCCTHON Dev Container",
   "dockerFile": "Dockerfile",
   "context": "..",
-  "postCreateCommand": "npm ci",
+  "postCreateCommand": "npm install && npm ci",
   "forwardPorts": [3000],
   "customizations": {
     "vscode": {
