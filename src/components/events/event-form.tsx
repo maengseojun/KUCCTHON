@@ -17,7 +17,10 @@ type EventFormProps = {
 };
 
 const inputStyle = {
+  display: 'block',
   width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
   border: '1px solid var(--border)',
   borderRadius: 16,
   background: 'var(--surface-strong)',
