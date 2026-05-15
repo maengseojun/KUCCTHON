@@ -18,7 +18,6 @@
     "typecheck": "./scripts/run_with_npm_version.sh next typegen && ./scripts/run_with_npm_version.sh tsc --noEmit",
     "test": "./scripts/run_with_npm_version.sh vitest run --passWithNoTests",
     "test:watch": "./scripts/run_with_npm_version.sh vitest",
-    "test:e2e": "./scripts/run_with_npm_version.sh playwright test",
     "check": "npm run lint && npm run format:check && npm run typecheck && npm test",
     "bootstrap": "./scripts/bootstrap_dev.sh",
     "supabase:start": "./scripts/run_with_npm_version.sh supabase start",
@@ -34,11 +33,9 @@
     "react-dom": "19.2.6"
   },
   "devDependencies": {
-    "@playwright/test": "1.60.0",
     "@types/node": "25.8.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "eslint-config-prettier": "10.1.8",
