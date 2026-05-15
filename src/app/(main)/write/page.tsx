@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, type TouchEvent } from 'react';
-import Link from 'next/link';
+import NextLink from 'next/link';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { fetchThankYouList, createThankYou } from '@/actions/thank-yous';
 import { createClient } from '@/lib/supabase/client';
@@ -216,12 +216,12 @@ export default function WritePage() {
             <span>
               {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일 감사 기록
             </span>
-            <Link
+            <NextLink
               href="/events/new"
               style={{ fontSize: '0.875rem', color: 'var(--accent)', textDecoration: 'none' }}
             >
               + 기념일 등록
-            </Link>
+            </NextLink>
           </h3>
 
           {selectedEntries.length > 0 ? (
