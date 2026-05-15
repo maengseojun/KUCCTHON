@@ -8,7 +8,7 @@ export default async function MainLayout({ children }: Readonly<{ children: Reac
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    // redirect('/login'); // Temporarily bypassed to show UI without real DB
   }
 
   return children;
