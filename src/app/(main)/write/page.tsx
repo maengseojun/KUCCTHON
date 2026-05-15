@@ -4,7 +4,7 @@ import { useState, type TouchEvent } from 'react';
 import Link from 'next/link';
 import { BottomNav } from '@/components/nav/bottom-nav';
 
-// Mock data – will be replaced with real Supabase queries later
+// Mock data - will be replaced with real Supabase queries later
 const mockEntries: Record<
   string,
   { id: number; text: string; isAnniversary?: boolean; targetName?: string }[]
@@ -25,7 +25,7 @@ const mockEntries: Record<
 };
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
-const GRID_SIZE = 42; // 7 × 6
+const GRID_SIZE = 42; // 7 x 6
 
 export default function WritePage() {
   const now = new Date();
@@ -79,7 +79,7 @@ export default function WritePage() {
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">
       <section className="phone-shell">
-        {/* ── Header with month navigation ── */}
+        {/* Header with month navigation */}
         <header className="app-header" style={{ justifyContent: 'center', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <button
@@ -112,7 +112,7 @@ export default function WritePage() {
           </div>
         </header>
 
-        {/* ── Calendar ── */}
+        {/* Calendar */}
         <section className="calendar-panel" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
           <div className="calendar-grid">
             {DAYS_OF_WEEK.map((day, i) => (
@@ -162,7 +162,7 @@ export default function WritePage() {
           </div>
         </section>
 
-        {/* ── Selected-day entries ── */}
+        {/* Selected-day entries */}
         <section style={{ padding: '0 20px', flex: 1, overflowY: 'auto' }}>
           <h3
             style={{
@@ -185,36 +185,73 @@ export default function WritePage() {
           </h3>
 
           {selectedEntries.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
-              {selectedEntries.map((entry) => (
-                <li
+            <div
+              aria-label="선택한 날짜의 감사 기록"
+              style={{
+                position: 'relative',
+                overflow: 'hidden',
+                minHeight: 132,
+                padding: '18px 18px 18px 32px',
+                border: '1px solid rgba(115, 145, 132, 0.24)',
+                borderRadius: 14,
+                background:
+                  'linear-gradient(to bottom, transparent 31px, rgba(86, 123, 108, 0.14) 32px), #fffdf6',
+                backgroundSize: '100% 32px',
+                boxShadow: '0 8px 18px rgba(42, 68, 56, 0.06)',
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: 20,
+                  top: 0,
+                  bottom: 0,
+                  width: 1,
+                  background: 'rgba(216, 118, 118, 0.38)',
+                }}
+              />
+
+              {selectedEntries.map((entry, index) => (
+                <article
                   key={entry.id}
                   style={{
-                    background: 'var(--surface)',
-                    padding: 16,
-                    borderRadius: 16,
-                    border: '1px solid var(--border)',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                    position: 'relative',
+                    marginTop: index === 0 ? 0 : 18,
+                    paddingBottom: 2,
                   }}
                 >
                   {entry.isAnniversary && (
                     <div
                       style={{
-                        fontSize: '0.75rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        minHeight: 22,
+                        padding: '0 8px',
+                        borderRadius: 999,
+                        background: 'rgba(209, 235, 226, 0.9)',
                         color: 'var(--accent-strong)',
+                        fontSize: '0.75rem',
                         fontWeight: 700,
-                        marginBottom: 4,
+                        marginBottom: 6,
                       }}
                     >
-                      🎉 기념일 ({entry.targetName})
+                      기념일 / {entry.targetName}
                     </div>
                   )}
-                  <p style={{ margin: 0, fontSize: '0.9375rem', color: 'var(--foreground)' }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: 'var(--foreground)',
+                      fontSize: '0.9375rem',
+                      lineHeight: '1.85',
+                    }}
+                  >
                     {entry.text}
                   </p>
-                </li>
+                </article>
               ))}
-            </ul>
+            </div>
           ) : (
             <div
               style={{
@@ -229,7 +266,7 @@ export default function WritePage() {
           )}
         </section>
 
-        {/* ── Quick compose ── */}
+        {/* Quick compose */}
         <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
           <div>
             <p className="panel-label">오늘의 감사</p>
