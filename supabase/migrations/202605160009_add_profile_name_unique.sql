@@ -11,8 +11,14 @@ FROM ranked_profiles
 WHERE profiles.id = ranked_profiles.id
   AND ranked_profiles.duplicate_rank > 1;
 
-ALTER TABLE public.profiles
-  ADD CONSTRAINT profiles_name_unique UNIQUE (name);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'profiles_name_unique'
+  ) THEN
+    ALTER TABLE public.profiles ADD CONSTRAINT profiles_name_unique UNIQUE (name);
+  END IF;
+END $$;
 
 -- handle_new_user trigger는 수정하지 않음.
 -- 동일 이름으로 가입 시도 시 trigger의 INSERT가 unique violation을 발생시키고,
