@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { ThankYou } from '@/types/thank-you';
 
-const SELECT_COLUMNS = 'id, from_id, to_id, target_id, content, created_at';
+const SELECT_COLUMNS = 'id, from_id, to_id, target_id, date, content, created_at';
 
 async function getCurrentUserId() {
   const supabase = await createClient();
@@ -38,7 +38,8 @@ export async function getThankYouList(): Promise<ThankYou[]> {
 export async function insertThankYou(
   from_id: string,
   to_id: string,
-  content: string
+  content: string,
+  date = new Date().toISOString().split('T')[0]
 ): Promise<ThankYou> {
   const supabase = await createClient();
 
@@ -47,7 +48,7 @@ export async function insertThankYou(
     .insert({
       from_id,
       to_id,
-      date: new Date().toISOString().split('T')[0],
+      date,
       content,
     })
     .select(SELECT_COLUMNS)
@@ -77,7 +78,8 @@ export async function getThankYousByTargetId(targetId: string): Promise<ThankYou
 // 신규: Target에 감사 메시지 저장
 export async function insertThankYouForTarget(
   targetId: string,
-  content: string
+  content: string,
+  date: string
 ): Promise<ThankYou> {
   const { supabase, userId } = await requireCurrentUserId();
 
@@ -87,7 +89,7 @@ export async function insertThankYouForTarget(
       from_id: userId,
       to_id: null,
       target_id: targetId,
-      date: new Date().toISOString().split('T')[0],
+      date,
       content,
     })
     .select(SELECT_COLUMNS)

@@ -51,6 +51,20 @@ ALTER TABLE public."thank-yous"
 ALTER TABLE public."thank-yous"
   ADD COLUMN IF NOT EXISTS target_id uuid REFERENCES public.targets(id) ON DELETE SET NULL;
 
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'thank-yous'
+      AND column_name = 'date'
+  ) THEN
+    ALTER TABLE public."thank-yous" ALTER COLUMN date DROP NOT NULL;
+  END IF;
+END;
+$$;
+
 ALTER TABLE public."thank-yous"
   ALTER COLUMN to_id DROP NOT NULL;
 

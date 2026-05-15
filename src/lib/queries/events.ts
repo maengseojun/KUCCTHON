@@ -89,7 +89,7 @@ export async function insertEvent(input: CreateEventInput): Promise<EventWithTar
       event_date: input.event_date,
       category: input.category,
       recurs_yearly: input.recurs_yearly ?? true,
-      notify_days_before: input.notify_days_before ?? 3,
+      notify_days_before: input.notify_days_before ?? [3],
       memo: input.memo ?? null,
     })
     .select(

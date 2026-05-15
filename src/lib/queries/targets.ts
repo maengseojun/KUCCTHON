@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import type { CreateTargetInput, Target } from '@/types/target';
 
-const SELECT_COLUMNS = 'id, user_id, name, type, memo, birthday, thank_you_count, created_at';
+const SELECT_COLUMNS =
+  'id, user_id, name, type, memo, birthday, marriage_anniversary, relationship_started_on, thank_you_count, created_at';
 
 async function getCurrentUserId() {
   const supabase = await createClient();
@@ -73,6 +74,8 @@ export async function insertTarget(input: CreateTargetInput): Promise<Target> {
       type: input.type,
       memo: input.memo ?? null,
       birthday: input.birthday ?? null,
+      marriage_anniversary: input.marriage_anniversary ?? null,
+      relationship_started_on: input.relationship_started_on ?? null,
     })
     .select(SELECT_COLUMNS)
     .single();

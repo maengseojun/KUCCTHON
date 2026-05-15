@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
+import { isValidDateKey } from '@/lib/dates/date-key';
 import { deleteTargetById, insertTarget } from '@/lib/queries/targets';
 import { TARGET_TYPES, type CreateTargetInput, type TargetType } from '@/types/target';
 
@@ -18,16 +19,12 @@ function isTargetType(value: string): value is TargetType {
   return TARGET_TYPES.includes(value as TargetType);
 }
 
-function isValidDate(value: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return false;
-  const [, year, month, day] = match;
-  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  return (
-    date.getUTCFullYear() === Number(year) &&
-    date.getUTCMonth() === Number(month) - 1 &&
-    date.getUTCDate() === Number(day)
-  );
+function validateOptionalDate(value: string, label: string): TargetActionResult | null {
+  if (value && !isValidDateKey(value)) {
+    return { error: `올바른 ${label} 형식을 입력해 주세요.` };
+  }
+
+  return null;
 }
 
 function validateCreateTargetInput(formData: FormData): CreateTargetInput | TargetActionResult {
@@ -35,6 +32,8 @@ function validateCreateTargetInput(formData: FormData): CreateTargetInput | Targ
   const type = readString(formData, 'type');
   const memo = readString(formData, 'memo');
   const birthday = readString(formData, 'birthday');
+  const marriageAnniversary = readString(formData, 'marriage_anniversary');
+  const relationshipStartedOn = readString(formData, 'relationship_started_on');
 
   if (!name) {
     return { error: '감사 대상 이름을 입력해 주세요.' };
@@ -44,8 +43,13 @@ function validateCreateTargetInput(formData: FormData): CreateTargetInput | Targ
     return { error: '감사 대상 유형을 선택해 주세요.' };
   }
 
-  if (birthday && !isValidDate(birthday)) {
-    return { error: '올바른 생년월일 형식을 입력해 주세요.' };
+  const invalidDate =
+    validateOptionalDate(birthday, '생일') ??
+    validateOptionalDate(marriageAnniversary, '결혼 기념일') ??
+    validateOptionalDate(relationshipStartedOn, '사귀기 시작한 날');
+
+  if (invalidDate) {
+    return invalidDate;
   }
 
   return {
@@ -53,6 +57,8 @@ function validateCreateTargetInput(formData: FormData): CreateTargetInput | Targ
     type,
     memo: memo || null,
     birthday: birthday || null,
+    marriage_anniversary: type === 'parent' ? marriageAnniversary || null : null,
+    relationship_started_on: type === 'partner' ? relationshipStartedOn || null : null,
   };
 }
 
@@ -89,7 +95,7 @@ export async function deleteTarget(formData: FormData): Promise<TargetActionResu
 export async function submitCreateTarget(formData: FormData) {
   const result = await createTarget(formData);
   if (result.error) {
-    redirect(`/targets?error=${encodeURIComponent(result.error)}`);
+    redirect(`/targets/new?error=${encodeURIComponent(result.error)}`);
   }
   redirect('/targets');
 }

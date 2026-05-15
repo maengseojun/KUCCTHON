@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
+import { isValidDateKey } from '@/lib/dates/date-key';
 import { getThankYouList, insertThankYou, insertThankYouForTarget } from '@/lib/queries/thank-yous';
 import type { ThankYou } from '@/types/thank-you';
 
@@ -39,25 +40,48 @@ export async function fetchThankYouList(): Promise<ThankYou[]> {
   return getThankYouList();
 }
 
+function readString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+export async function saveThankYouForTarget(formData: FormData): Promise<ThankYouActionResult> {
+  const targetId = readString(formData, 'target_id');
+  const content = readString(formData, 'content');
+  const date = readString(formData, 'date');
+
+  if (!targetId) {
+    return { error: '감사 대상을 찾지 못했습니다.' };
+  }
+
+  if (!content) {
+    return { error: '감사 메시지를 입력해 주세요.' };
+  }
+
+  if (!isValidDateKey(date)) {
+    return { error: '올바른 날짜를 선택해 주세요.' };
+  }
+
+  try {
+    const data = await insertThankYouForTarget(targetId, content, date);
+    return { error: null, data };
+  } catch {
+    return { error: '감사 메시지 저장에 실패했습니다.' };
+  }
+}
+
 // 신규: Target에 감사 메시지 저장 (FormData + redirect)
 export async function createThankYouForTarget(formData: FormData) {
   const targetId = formData.get('target_id');
-  const content = formData.get('content');
 
   if (typeof targetId !== 'string' || targetId.trim() === '') {
     redirect(`/targets?error=${encodeURIComponent('감사 대상을 찾지 못했습니다.')}`);
   }
 
-  if (typeof content !== 'string' || content.trim() === '') {
-    redirect(`/targets/${targetId}?error=${encodeURIComponent('감사 메시지를 입력해 주세요.')}`);
-  }
+  const result = await saveThankYouForTarget(formData);
 
-  try {
-    await insertThankYouForTarget(targetId.trim(), content.trim());
-  } catch {
-    redirect(
-      `/targets/${targetId}?error=${encodeURIComponent('감사 메시지 저장에 실패했습니다.')}`
-    );
+  if (result.error) {
+    redirect(`/targets/${targetId}?error=${encodeURIComponent(result.error)}`);
   }
 
   redirect(`/targets/${targetId}`);

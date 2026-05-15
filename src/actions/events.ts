@@ -1,7 +1,8 @@
 'use server';
 
+import { REMINDER_DAY_OPTIONS, normalizeReminderDays } from '@/lib/constants/reminders';
+import { isValidDateKey } from '@/lib/dates/date-key';
 import { getEvents, insertEvent } from '@/lib/queries/events';
-import { isValidDateKey } from '@/lib/calendar/dates';
 import {
   EVENT_CATEGORIES,
   type CreateEventInput,
@@ -28,27 +29,22 @@ function validateCreateEventInput(formData: FormData): CreateEventInput | EventA
   const title = readString(formData, 'title');
   const eventDate = readString(formData, 'event_date');
   const category = readString(formData, 'category');
-  const notifyDaysBefore = Number(readString(formData, 'notify_days_before') || '3');
+  const notifyDaysBefore = normalizeReminderDays(
+    formData
+      .getAll('notify_days_before')
+      .map((value) => Number(typeof value === 'string' ? value : ''))
+  );
   const memo = readString(formData, 'memo');
 
-  if (!targetId) {
-    return { error: '연결할 감사 대상을 선택해 주세요.' };
-  }
-
-  if (!title) {
-    return { error: '일정 이름을 입력해 주세요.' };
-  }
-
-  if (!isValidDateKey(eventDate)) {
-    return { error: '올바른 날짜를 선택해 주세요.' };
-  }
-
-  if (!isEventCategory(category)) {
-    return { error: '일정 유형을 선택해 주세요.' };
-  }
-
-  if (!Number.isInteger(notifyDaysBefore) || notifyDaysBefore < 0 || notifyDaysBefore > 30) {
-    return { error: '알림 기준일은 0일부터 30일 사이로 입력해 주세요.' };
+  if (!targetId) return { error: '연결할 감사 대상을 선택해 주세요.' };
+  if (!title) return { error: '일정 이름을 입력해 주세요.' };
+  if (!isValidDateKey(eventDate)) return { error: '올바른 날짜를 선택해 주세요.' };
+  if (!isEventCategory(category)) return { error: '일정 유형을 선택해 주세요.' };
+  if (
+    notifyDaysBefore.length === 0 ||
+    notifyDaysBefore.some((value) => !REMINDER_DAY_OPTIONS.includes(value as never))
+  ) {
+    return { error: '미리 알림을 하나 이상 선택해 주세요.' };
   }
 
   return {
@@ -68,11 +64,7 @@ export async function fetchEvents(): Promise<EventWithTarget[]> {
 
 export async function createEvent(formData: FormData): Promise<EventActionResult> {
   const validated = validateCreateEventInput(formData);
-
-  if ('error' in validated) {
-    return validated;
-  }
-
+  if ('error' in validated) return validated;
   try {
     const data = await insertEvent(validated);
     return { error: null, data };

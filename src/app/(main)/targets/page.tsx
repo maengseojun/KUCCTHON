@@ -1,10 +1,10 @@
 import Link from 'next/link';
 
-import { submitCreateTarget, submitDeleteTarget } from '@/actions/targets';
+import { submitDeleteTarget } from '@/actions/targets';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { SUGGESTED_EVENTS } from '@/lib/constants/suggested-events';
 import { getTargets } from '@/lib/queries/targets';
-import { TARGET_TYPE_LABELS, TARGET_TYPES } from '@/types/target';
+import { TARGET_TYPE_LABELS } from '@/types/target';
 
 type TargetsPageProps = {
   searchParams: Promise<{
@@ -29,117 +29,34 @@ export default async function TargetsPage({ searchParams }: TargetsPageProps) {
             <p className="eyebrow">Targets</p>
             <h1>감사 대상</h1>
           </div>
-          <Link href="/events/new">
-            <button type="button">일정</button>
+          <Link href="/targets/new">
+            <button type="button">대상 추가</button>
           </Link>
         </header>
 
-        <section className="activity-list" aria-label="감사 대상 추가" style={{ gap: 14 }}>
-          <form action={submitCreateTarget} style={{ display: 'grid', gap: 12 }}>
-            <label style={{ display: 'grid', gap: 8 }}>
-              <span className="panel-label" style={{ marginBottom: 0 }}>
-                Name
-              </span>
-              <input
-                name="name"
-                placeholder="예: 엄마, 여자친구 지수"
-                required
-                type="text"
-                style={{
-                  width: '100%',
-                  border: '1px solid var(--border)',
-                  borderRadius: 16,
-                  background: 'var(--surface-strong)',
-                  color: 'var(--foreground)',
-                  font: 'inherit',
-                  padding: '12px 14px',
-                }}
-              />
-            </label>
-
-            <label style={{ display: 'grid', gap: 8 }}>
-              <span className="panel-label" style={{ marginBottom: 0 }}>
-                Type
-              </span>
-              <select
-                name="type"
-                required
-                style={{
-                  width: '100%',
-                  border: '1px solid var(--border)',
-                  borderRadius: 16,
-                  background: 'var(--surface-strong)',
-                  color: 'var(--foreground)',
-                  font: 'inherit',
-                  padding: '12px 14px',
-                }}
-              >
-                {TARGET_TYPES.map((type) => (
-                  <option key={type} value={type}>
-                    {TARGET_TYPE_LABELS[type]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label style={{ display: 'grid', gap: 8 }}>
-              <span className="panel-label" style={{ marginBottom: 0 }}>
-                Birthday
-              </span>
-              <input
-                name="birthday"
-                type="date"
-                style={{
-                  width: '100%',
-                  border: '1px solid var(--border)',
-                  borderRadius: 16,
-                  background: 'var(--surface-strong)',
-                  color: 'var(--foreground)',
-                  font: 'inherit',
-                  padding: '12px 14px',
-                }}
-              />
-            </label>
-
-            <label style={{ display: 'grid', gap: 8 }}>
-              <span className="panel-label" style={{ marginBottom: 0 }}>
-                Memo
-              </span>
-              <input
-                name="memo"
-                placeholder="선택 메모"
-                type="text"
-                style={{
-                  width: '100%',
-                  border: '1px solid var(--border)',
-                  borderRadius: 16,
-                  background: 'var(--surface-strong)',
-                  color: 'var(--foreground)',
-                  font: 'inherit',
-                  padding: '12px 14px',
-                }}
-              />
-            </label>
-
-            {errorMessage ? (
-              <p
-                role="alert"
-                style={{
-                  borderRadius: 16,
-                  background: '#fff1ed',
-                  color: '#9a3412',
-                  fontSize: '0.875rem',
-                  lineHeight: 1.4,
-                  padding: '10px 12px',
-                }}
-              >
-                {errorMessage}
-              </p>
-            ) : null}
-
-            <button type="submit">대상 추가</button>
-          </form>
+        <section className="hero-panel" aria-label="대상 안내">
+          <p className="panel-label">관계 캘린더</p>
+          <h2>대상 정보에 입력한 기념일은 일정으로 자동 표시됩니다.</h2>
+          <p>대상 추가 화면에서 생일, 부모님 결혼 기념일, 연인 시작일을 입력할 수 있습니다.</p>
         </section>
+
+        {errorMessage ? (
+          <section className="activity-list" aria-label="대상 오류">
+            <p
+              role="alert"
+              style={{
+                borderRadius: 16,
+                background: '#fff1ed',
+                color: '#9a3412',
+                fontSize: '0.875rem',
+                lineHeight: 1.4,
+                padding: '10px 12px',
+              }}
+            >
+              {errorMessage}
+            </p>
+          </section>
+        ) : null}
 
         <section className="activity-list" aria-label="감사 대상 목록">
           {targets.length === 0 ? (
@@ -161,10 +78,14 @@ export default async function TargetsPage({ searchParams }: TargetsPageProps) {
                     <p>
                       {TARGET_TYPE_LABELS[target.type]}
                       {target.birthday ? ` · 🎂 ${target.birthday}` : ''}
+                      {target.marriage_anniversary ? ` · 💍 ${target.marriage_anniversary}` : ''}
+                      {target.relationship_started_on
+                        ? ` · 💚 ${target.relationship_started_on}`
+                        : ''}
                       {' · '}감사 {target.thank_you_count}회
                     </p>
                     <p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                      추천: {SUGGESTED_EVENTS[target.type].map((e) => e.label).join(', ')}
+                      추천: {SUGGESTED_EVENTS[target.type].map((event) => event.label).join(', ')}
                     </p>
                   </Link>
                 </div>
