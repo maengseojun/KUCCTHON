@@ -11,6 +11,18 @@ type EntryType = { id: string; text: string; isAnniversary?: boolean; targetName
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const GRID_SIZE = 42; // 7 × 6
 
+// 💡 날짜를 'YYYY-MM-DD' 형식으로 일관되게 포맷팅하는 헬퍼 함수
+const formatDateKey = (year: number, month: number, day: number) => {
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${year}-${mm}-${dd}`;
+};
+
+// Date 객체를 받아 'YYYY-MM-DD' 키로 변환
+const getDateKey = (date: Date) => {
+  return formatDateKey(date.getFullYear(), date.getMonth() + 1, date.getDate());
+};
+
 export default function WritePage() {
   const now = new Date();
   const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -23,24 +35,27 @@ export default function WritePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // 사용자 ID 가져오기
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user?.id) return;
         setUserId(user.id);
 
-        // 감사 리스트 가져오기 (from_id가 userId인 것만)
         const thankYouList = await fetchThankYouList(user.id);
         const entriesRecord: Record<string, EntryType[]> = {};
 
         for (const thankYou of thankYouList) {
-          const key = thankYou.date; // yyyy-m-d 형식
+          // 💡 DB에서 온 thankYou.date가 '2026-5-1' 혹은 '2026-05-01' 어떤 형태든 YYYY-MM-DD로 정규화
+          const dateObj = new Date(thankYou.date);
+          if (isNaN(dateObj.getTime())) continue; // 올바르지 않은 날짜 패스
+
+          const key = getDateKey(dateObj);
+          
           if (!entriesRecord[key]) {
             entriesRecord[key] = [];
           }
           entriesRecord[key].push({
-            id: `${thankYou.from_id}-${thankYou.date}`,
+            id: thankYou.id || `${thankYou.from_id}-${thankYou.date}-${entriesRecord[key].length}`, 
             text: thankYou.content,
             isAnniversary: false,
             targetName: thankYou.to_id,
@@ -77,28 +92,33 @@ export default function WritePage() {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-  type Cell = { date: number; isCurrentMonth: boolean; key: string };
+  type Cell = { date: number; isCurrentMonth: boolean; key: string; monthOffset: number };
   const cells: Cell[] = [];
 
+  // 이전 달 날짜 채우기
   for (let i = 0; i < firstDayOfMonth; i++) {
     const d = daysInPrevMonth - firstDayOfMonth + i + 1;
-    cells.push({ date: d, isCurrentMonth: false, key: `p${d}` });
+    cells.push({ date: d, isCurrentMonth: false, key: `p${d}`, monthOffset: -1 });
   }
+  // 현재 달 날짜 채우기
   for (let i = 1; i <= daysInMonth; i++) {
-    cells.push({ date: i, isCurrentMonth: true, key: `c${i}` });
+    cells.push({ date: i, isCurrentMonth: true, key: `c${i}`, monthOffset: 0 });
   }
+  // 다음 달 날짜 채우기
   for (let i = 1; cells.length < GRID_SIZE; i++) {
-    cells.push({ date: i, isCurrentMonth: false, key: `n${i}` });
+    cells.push({ date: i, isCurrentMonth: false, key: `n${i}`, monthOffset: 1 });
   }
 
-  const selectedKey = `${selectedDate.getFullYear()}-${selectedDate.getMonth() + 1}-${selectedDate.getDate()}`;
+  // 💡 선택된 날짜 키 정규화 반영
+  const selectedKey = getDateKey(selectedDate);
   const selectedEntries = entries[selectedKey] ?? [];
 
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
 
+  // 💡 달력에 잔디 그릴 때 일관된 Key 포맷 사용
   const entryCount = (d: number) =>
-    (entries[`${year}-${month + 1}-${d}`] ?? []).length;
+    (entries[formatDateKey(year, month + 1, d)] ?? []).length;
 
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">
@@ -155,9 +175,14 @@ export default function WritePage() {
                 <div
                   key={cell.key}
                   role="button"
-                  tabIndex={cell.isCurrentMonth ? 0 : -1}
+                  tabIndex={0}
                   onClick={() => {
-                    if (cell.isCurrentMonth) setSelectedDate(new Date(year, month, cell.date));
+                    // 💡 다른 달의 일자를 클릭해도 해당 달/일로 정확히 이동되도록 UX 개선
+                    const targetDate = new Date(year, month + cell.monthOffset, cell.date);
+                    setSelectedDate(targetDate);
+                    if (cell.monthOffset !== 0) {
+                      setBaseDate(new Date(targetDate.getFullYear(), targetDate.getMonth(), 1));
+                    }
                   }}
                   className={[
                     'calendar-cell',
@@ -167,7 +192,7 @@ export default function WritePage() {
                   ]
                     .filter(Boolean)
                     .join(' ')}
-                  style={{ cursor: cell.isCurrentMonth ? 'pointer' : 'default' }}
+                  style={{ cursor: 'pointer' }}
                 >
                   <span className={`date-number ${today ? 'today' : ''}`}>{cell.date}</span>
                 </div>
