@@ -5,7 +5,7 @@
   "settings": {
     "terminal.integrated.defaultProfile.linux": "bash"
   },
-  "postCreateCommand": "npm install -g npm@10.9.7 && npm ci && if [ -f .env.example ] && [ ! -f .env.local ]; then cp .env.example .env.local; fi",
+  "postCreateCommand": "npm ci",
   "forwardPorts": [3000],
   "customizations": {
     "vscode": {
