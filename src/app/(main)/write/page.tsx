@@ -295,12 +295,19 @@ export default function WritePage() {
                 </span>
               )}
             </span>
-            <Link
-              href="/events/new"
-              style={{ fontSize: '0.875rem', color: 'var(--accent)', textDecoration: 'none' }}
+            <button
+              onClick={openModal}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                fontSize: '0.875rem',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+              }}
             >
               + 작성하기
-            </Link>
+            </button>
           </h3>
 
           {selectedEntries.length > 0 ? (
@@ -387,18 +394,7 @@ export default function WritePage() {
           )}
         </section>
 
-        {/* Quick compose */}
-        <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
-          <div>
-            <p className="panel-label">
-              {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
-            </p>
-            <h2 style={{ fontSize: '1.125rem' }}>오늘 감사한 일을 적어보세요</h2>
-          </div>
-          <button type="button" onClick={openModal}>
-            작성
-          </button>
-        </section>
+
 
         <BottomNav active="write" />
       </section>
