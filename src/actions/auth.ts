@@ -1,18 +1,54 @@
 'use server';
 
-import { signUp } from '@/lib/queries/auth'; // 위치에 맞게 수정
+import { redirect } from 'next/navigation';
 
-export async function signUpAction(formData: FormData) {
-  const name = formData.get('name') as string;
-  const birthday = formData.get('birthday') as string;
-  const user_id = formData.get('user_id') as string;
-  const user_password = formData.get('user_password') as string;
+import { createClient } from '@/lib/supabase/server';
 
-  const { data, error } = await signUp(name, birthday, user_id, user_password);
+export type AuthActionResult = {
+  error: string | null;
+};
 
-  if (error) {
-    return { success: false, message: "회원가입에 실패했습니다." };
+function readCredentials(
+  formData: FormData
+): { email: string; password: string } | AuthActionResult {
+  const email = formData.get('email');
+  const password = formData.get('password');
+
+  if (typeof email !== 'string' || email.trim() === '') {
+    return { error: '이메일을 입력해 주세요.' };
   }
 
-  return { success: true, user: data[0] };
+  if (typeof password !== 'string' || password === '') {
+    return { error: '비밀번호를 입력해 주세요.' };
+  }
+
+  return { email: email.trim(), password };
+}
+
+export async function login(formData: FormData): Promise<AuthActionResult> {
+  const credentials = readCredentials(formData);
+
+  if ('error' in credentials) {
+    return credentials;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword(credentials);
+
+  if (error) {
+    return { error: '이메일 또는 비밀번호를 확인해 주세요.' };
+  }
+
+  redirect('/');
+}
+
+export async function logout(): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    redirect(`/login?error=${encodeURIComponent('로그아웃에 실패했습니다. 다시 시도해 주세요.')}`);
+  }
+
+  redirect('/login');
 }
