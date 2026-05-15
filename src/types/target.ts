@@ -15,6 +15,7 @@ export type Target = {
   name: string;
   type: TargetType;
   memo: string | null;
+  thank_you_count: number;
   created_at: string;
 };
 
