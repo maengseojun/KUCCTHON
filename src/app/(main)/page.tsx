@@ -35,6 +35,10 @@ function findUpcomingEvent(
   return calendarItems.find((item) => item.type === 'event' && item.date >= todayKey) ?? null;
 }
 
+function writeHrefForDate(dateKey: string) {
+  return `/write?date=${dateKey}`;
+}
+
 export default async function Page() {
   const [targets, events, thankYous] = await Promise.all([
     getTargets(),
@@ -47,6 +51,7 @@ export default async function Page() {
   const targetById = new Map(targets.map((target) => [target.id, target]));
   const recentThankYous = thankYous.slice(0, 2);
   const eventHref = targets.length > 0 ? '/events/new' : '/targets/new';
+  const anniversaryHref = upcomingEvent ? writeHrefForDate(upcomingEvent.date) : eventHref;
 
   return (
     <main className="demo-stage" aria-label="오늘 홈">
@@ -63,7 +68,12 @@ export default async function Page() {
           </Link>
         </header>
 
-        <section className="hero-panel" aria-label="다가오는 일정">
+        <Link
+          className="hero-panel"
+          href={anniversaryHref}
+          style={{ color: 'inherit', textDecoration: 'none' }}
+          aria-label="다가오는 일정"
+        >
           <p className="panel-label">Gratitude reminder</p>
           {upcomingEvent ? (
             <>
@@ -82,12 +92,19 @@ export default async function Page() {
               <p>생일이나 기념일을 추가하면 홈과 작성하기 화면에서 바로 확인할 수 있습니다.</p>
             </>
           )}
-        </section>
+        </Link>
 
-        <section
+        <Link
           className="activity-list"
+          href={anniversaryHref}
           aria-label="기념일 바로가기"
-          style={{ display: 'grid', gap: 12, marginBottom: 14 }}
+          style={{
+            color: 'inherit',
+            display: 'grid',
+            gap: 12,
+            marginBottom: 14,
+            textDecoration: 'none',
+          }}
         >
           <div
             style={{
@@ -106,24 +123,22 @@ export default async function Page() {
                   : '먼저 대상을 추가한 뒤 기념일을 등록할 수 있습니다.'}
               </p>
             </div>
-            <Link href={eventHref} style={{ color: 'inherit', textDecoration: 'none' }}>
-              <span
-                style={{
-                  background: 'var(--accent-soft)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 999,
-                  color: 'var(--accent-strong)',
-                  display: 'inline-block',
-                  fontWeight: 700,
-                  padding: '12px 18px',
-                  textAlign: 'center',
-                }}
-              >
-                {targets.length > 0 ? '등록하기' : '대상 추가'}
-              </span>
-            </Link>
+            <span
+              style={{
+                background: 'var(--accent-soft)',
+                border: '1px solid var(--border)',
+                borderRadius: 999,
+                color: 'var(--accent-strong)',
+                display: 'inline-block',
+                fontWeight: 700,
+                padding: '12px 18px',
+                textAlign: 'center',
+              }}
+            >
+              {upcomingEvent ? '일정보기' : targets.length > 0 ? '등록하기' : '대상 추가'}
+            </span>
           </div>
-        </section>
+        </Link>
 
         <section className="activity-list" aria-label="최근 감사 기록">
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
@@ -143,10 +158,11 @@ export default async function Page() {
                 : '기타';
 
               return (
-                <div
+                <Link
                   key={thankYou.id}
                   className="activity-item"
-                  style={{ alignItems: 'flex-start' }}
+                  href={writeHrefForDate(thankYou.date)}
+                  style={{ alignItems: 'flex-start', color: 'inherit', textDecoration: 'none' }}
                 >
                   <span className="avatar">{targetName.slice(0, 1)}</span>
                   <div>
@@ -154,7 +170,7 @@ export default async function Page() {
                     <p>{thankYou.content}</p>
                     <p style={{ fontSize: '0.8125rem', marginTop: 4 }}>{thankYou.date}</p>
                   </div>
-                </div>
+                </Link>
               );
             })
           ) : (

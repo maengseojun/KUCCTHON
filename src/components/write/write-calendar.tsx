@@ -11,7 +11,12 @@ import type { EventWithTarget } from '@/types/event';
 import type { Target } from '@/types/target';
 import type { ThankYou } from '@/types/thank-you';
 
-type WriteCalendarProps = { targets: Target[]; events: EventWithTarget[]; thankYous: ThankYou[] };
+type WriteCalendarProps = {
+  targets: Target[];
+  events: EventWithTarget[];
+  thankYous: ThankYou[];
+  initialDateKey?: string;
+};
 type CalendarCell = { date: number; isCurrentMonth: boolean; key: string };
 type TargetDayGroup = {
   target: Target | null;
@@ -48,11 +53,19 @@ function groupThankYousByDate(thankYous: ThankYou[]) {
   return grouped;
 }
 
-export function WriteCalendar({ targets, events, thankYous }: WriteCalendarProps) {
+function parseLocalDateKey(dateKey: string) {
+  const [year, month, day] = dateKey.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function WriteCalendar({ targets, events, thankYous, initialDateKey }: WriteCalendarProps) {
   const router = useRouter();
   const now = new Date();
-  const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
-  const [selectedDate, setSelectedDate] = useState(now);
+  const initialDate = initialDateKey ? parseLocalDateKey(initialDateKey) : now;
+  const [baseDate, setBaseDate] = useState(
+    new Date(initialDate.getFullYear(), initialDate.getMonth(), 1)
+  );
+  const [selectedDate, setSelectedDate] = useState(initialDate);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   const [isPending, startTransition] = useTransition();
   const [showModal, setShowModal] = useState(false);
