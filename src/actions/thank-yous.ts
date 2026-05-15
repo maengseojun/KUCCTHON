@@ -2,11 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
-import {
-  getThankYouList,
-  insertThankYou,
-  insertThankYouForTarget,
-} from '@/lib/queries/thank-yous';
+import { getThankYouList, insertThankYou, insertThankYouForTarget } from '@/lib/queries/thank-yous';
 import type { ThankYou } from '@/types/thank-you';
 
 export type ThankYouActionResult = {
@@ -53,9 +49,7 @@ export async function createThankYouForTarget(formData: FormData) {
   }
 
   if (typeof content !== 'string' || content.trim() === '') {
-    redirect(
-      `/targets/${targetId}?error=${encodeURIComponent('감사 메시지를 입력해 주세요.')}`
-    );
+    redirect(`/targets/${targetId}?error=${encodeURIComponent('감사 메시지를 입력해 주세요.')}`);
   }
 
   try {
