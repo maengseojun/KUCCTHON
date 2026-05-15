@@ -3,7 +3,7 @@
 import { useState, useEffect, type TouchEvent } from 'react';
 import Link from 'next/link';
 import { BottomNav } from '@/components/nav/bottom-nav';
-import { fetchThankYouList } from '@/actions/thank-yous';
+import { fetchThankYouList, createThankYou } from '@/actions/thank-yous';
 import { createClient } from '@/lib/supabase/client';
 
 type EntryType = { id: string; text: string; isAnniversary?: boolean; targetName?: string };
@@ -41,7 +41,24 @@ export default function WritePage() {
         if (!user?.id) return;
         setUserId(user.id);
 
-        const thankYouList = await fetchThankYouList(user.id);
+        let thankYouList = await fetchThankYouList(user.id);
+
+        if (thankYouList.length === 0) {
+          const today = formatDateKey(now.getFullYear(), now.getMonth() + 1, now.getDate());
+          const result = await createThankYou(
+            user.id,
+            'auto-generated-target',
+            today,
+            '첫 번째 감사 메시지입니다. 환영합니다!'
+          );
+
+          if (!result.error) {
+            thankYouList = await fetchThankYouList(user.id);
+          } else {
+            console.warn('자동 감사 메시지 저장에 실패했습니다:', result.error);
+          }
+        }
+
         const entriesRecord: Record<string, EntryType[]> = {};
 
         for (const thankYou of thankYouList) {
