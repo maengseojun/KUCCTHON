@@ -32,9 +32,7 @@ const SEED_ENTRIES: EntriesMap = {
     { id: 5, text: '로즈데이 기념으로 꽃을 받았다.', isAnniversary: true, targetName: '연인' },
     { id: 6, text: '지하철에 바로 자리가 나서 편하게 왔다.', targetName: '나 자신' },
   ],
-  '2026-5-16': [
-    { id: 7, text: '새로운 캘린더 기능을 멋지게 구현했다.', targetName: '나 자신' },
-  ],
+  '2026-5-16': [{ id: 7, text: '새로운 캘린더 기능을 멋지게 구현했다.', targetName: '나 자신' }],
 };
 
 const TARGET_OPTIONS = [
@@ -110,6 +108,7 @@ export default function WritePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEntries(loadEntries());
     setHydrated(true);
   }, []);
@@ -155,7 +154,7 @@ export default function WritePage() {
 
   const entryCount = useCallback(
     (d: number) => (entries[`${year}-${month + 1}-${d}`] ?? []).length,
-    [entries, year, month],
+    [entries, year, month]
   );
 
   // Modal handlers
@@ -188,10 +187,7 @@ export default function WritePage() {
   if (!hydrated) {
     return (
       <main className="demo-stage">
-        <section
-          className="phone-shell"
-          style={{ alignItems: 'center', justifyContent: 'center' }}
-        >
+        <section className="phone-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
           <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
         </section>
       </main>
