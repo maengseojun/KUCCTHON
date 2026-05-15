@@ -1,3 +1,5 @@
+import { BottomNav } from '@/components/nav/bottom-nav';
+
 export default function Page() {
   return (
     <main className="demo-stage" aria-label="KUCCTHON mobile app preview">
@@ -43,13 +45,7 @@ export default function Page() {
           </div>
         </section>
 
-        <nav className="bottom-tabs" aria-label="Demo app navigation">
-          <span className="active">Home</span>
-          <span>Write</span>
-          <span>Friends</span>
-          <span>Alerts</span>
-          <span>Cards</span>
-        </nav>
+        <BottomNav active="home" />
       </section>
     </main>
   );
