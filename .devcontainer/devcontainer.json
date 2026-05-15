@@ -1,0 +1,19 @@
+{
+  "name": "KUCCTHON Dev Container",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "settings": {
+    "terminal.integrated.defaultProfile.linux": "bash"
+  },
+  "postCreateCommand": "npm install -g npm@10.9.7 && npm ci && if [ -f .env.example ] && [ ! -f .env.local ]; then cp .env.example .env.local; fi",
+  "forwardPorts": [3000],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "remoteUser": "vscode"
+}
