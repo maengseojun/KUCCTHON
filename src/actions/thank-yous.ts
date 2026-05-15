@@ -32,7 +32,9 @@ function validateThankYouInput(
 }
 
 export async function fetchThankYouList(): Promise<ThankYou[]> {
-  return getThankYouList();
+  const thankYous = await getThankYouList();
+
+  return thankYous;
 }
 
 export async function createThankYou(
