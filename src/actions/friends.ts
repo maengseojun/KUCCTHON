@@ -46,7 +46,7 @@ export async function createFriendRelation(
   try {
     const data = await insertFriendRelation(validated.friend_a_id, validated.friend_b_id);
     return { error: null, data };
-  } catch (error) {
+  } catch {
     return { error: '친구 관계 저장에 실패했습니다.' };
   }
 }
@@ -64,7 +64,7 @@ export async function removeFriendRelation(
   try {
     await deleteFriendRelation(validated.friend_a_id, validated.friend_b_id);
     return { error: null, data: [] };
-  } catch (error) {
+  } catch {
     return { error: '친구 관계 삭제에 실패했습니다.' };
   }
 }
