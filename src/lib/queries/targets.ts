@@ -64,6 +64,25 @@ export async function deleteTargetById(id: string): Promise<void> {
   }
 }
 
+export async function getTargetsByFromId(from_id: string): Promise<Target[]> {
+  try {
+    const { data, error } = await supabase
+      .from('targets')
+      .select('id, nickname, thank_you_count, from_id')
+      .eq('from_id', from_id)
+      .order('thank_you_count', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch targets for from_id=${from_id}: ${error.message}`);
+    }
+
+    return (data as Target[]) || [];
+  } catch (error) {
+    console.error('Error fetching targets by from_id:', error);
+    throw error;
+  }
+}
+
 export async function incrementThankYouCount(id: string): Promise<Target> {
   try {
     const current = await supabase.from('targets').select('thank_you_count').eq('id', id).single();

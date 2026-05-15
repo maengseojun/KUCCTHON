@@ -5,12 +5,13 @@ import {
   incrementThankYouCount,
   decrementThankYouCount,
   deleteTargetById,
+  getTargetsByFromId,
   type Target,
 } from '@/lib/queries/targets';
 
 export type TargetActionResult = {
   error: string | null;
-  data?: Target;
+  data?: Target | Target[];
 };
 
 function validateCreateInput(
@@ -51,6 +52,19 @@ export async function createTarget(id: string, nickname: string, from_id: string
     return { error: null, data };
   } catch {
     return { error: '대상 생성에 실패했습니다.' };
+  }
+}
+
+export async function fetchTargetsByFromId(from_id: string): Promise<TargetActionResult> {
+  if (typeof from_id !== 'string' || from_id.trim() === '') {
+    return { error: 'from_id를 입력해 주세요.' };
+  }
+
+  try {
+    const data = await getTargetsByFromId(from_id.trim());
+    return { error: null, data: data[0] ? data : [] };
+  } catch {
+    return { error: 'from_id 기준 대상 목록을 불러오지 못했습니다.' };
   }
 }
 
