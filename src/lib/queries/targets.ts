@@ -1,142 +1,123 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
+import type { CreateTargetInput, Target } from '@/types/target';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const SELECT_COLUMNS = 'id, user_id, name, type, memo, thank_you_count, created_at';
 
-export interface Target {
-  id: string;
-  nickname: string;
-  thank_you_count: number;
-  from_id: string;
+async function getCurrentUserId() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return { supabase, userId: user?.id ?? null };
 }
 
-/*
-export async function getTargetList(): Promise<Target[]> {
-  try {
-    const { data, error } = await supabase
-      .from('targets')
-      .select('id, nickname, thank_you_count, from_id')
-      .order('thank_you_count', { ascending: false });
+async function requireCurrentUserId() {
+  const { supabase, userId } = await getCurrentUserId();
 
-    if (error) {
-      throw new Error(`Failed to fetch target list: ${error.message}`);
-    }
-
-    return (data as Target[]) || [];
-  } catch (error) {
-    console.error('Error fetching target list:', error);
-    throw error;
+  if (!userId) {
+    throw new Error('로그인이 필요합니다.');
   }
+
+  return { supabase, userId };
 }
-  */
 
-export async function insertTarget(id: string, nickname: string, from_id: string): Promise<Target> {
-  try {
-    const { data, error } = await supabase
-      .from('targets')
-      .insert({ id, nickname, thank_you_count: 0, from_id })
-      .select('id, nickname, thank_you_count, from_id')
-      .single();
+export async function getTargets(): Promise<Target[]> {
+  const { supabase, userId } = await getCurrentUserId();
 
-    if (error) {
-      throw new Error(`Failed to insert target: ${error.message}`);
-    }
-
-    return data as Target;
-  } catch (error) {
-    console.error('Error inserting target:', error);
-    throw error;
+  if (!userId) {
+    return [];
   }
+
+  const { data, error } = await supabase
+    .from('targets')
+    .select(SELECT_COLUMNS)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error('감사 대상을 불러오지 못했습니다.');
+  }
+
+  return (data ?? []) as Target[];
+}
+
+export async function getTargetById(id: string): Promise<Target | null> {
+  const { supabase, userId } = await getCurrentUserId();
+
+  if (!userId) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('targets')
+    .select(SELECT_COLUMNS)
+    .eq('user_id', userId)
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error('감사 대상을 불러오지 못했습니다.');
+  }
+
+  return data as Target | null;
+}
+
+export async function insertTarget(input: CreateTargetInput): Promise<Target> {
+  const { supabase, userId } = await requireCurrentUserId();
+  const { data, error } = await supabase
+    .from('targets')
+    .insert({
+      user_id: userId,
+      name: input.name,
+      type: input.type,
+      memo: input.memo ?? null,
+    })
+    .select(SELECT_COLUMNS)
+    .single();
+
+  if (error) {
+    throw new Error('감사 대상을 저장하지 못했습니다.');
+  }
+
+  return data as Target;
 }
 
 export async function deleteTargetById(id: string): Promise<void> {
-  try {
-    const { error } = await supabase.from('targets').delete().eq('id', id);
+  const { supabase, userId } = await requireCurrentUserId();
+  const { error } = await supabase.from('targets').delete().eq('user_id', userId).eq('id', id);
 
-    if (error) {
-      throw new Error(`Failed to delete target: ${error.message}`);
-    }
-  } catch (error) {
-    console.error('Error deleting target by id:', error);
-    throw error;
-  }
-}
-
-export async function getTargetsByFromId(from_id: string): Promise<Target[]> {
-  try {
-    const { data, error } = await supabase
-      .from('targets')
-      .select('id, nickname, thank_you_count, from_id')
-      .eq('from_id', from_id)
-      .order('thank_you_count', { ascending: false });
-
-    if (error) {
-      throw new Error(`Failed to fetch targets for from_id=${from_id}: ${error.message}`);
-    }
-
-    return (data as Target[]) || [];
-  } catch (error) {
-    console.error('Error fetching targets by from_id:', error);
-    throw error;
+  if (error) {
+    throw new Error('감사 대상을 삭제하지 못했습니다.');
   }
 }
 
 export async function incrementThankYouCount(id: string): Promise<Target> {
-  try {
-    const current = await supabase.from('targets').select('thank_you_count').eq('id', id).single();
+  const { supabase, userId } = await requireCurrentUserId();
 
-    if (current.error) {
-      throw new Error(`Failed to read current count: ${current.error.message}`);
-    }
+  const { data, error } = await supabase.rpc('increment_thank_you_count', {
+    target_id: id,
+    owner_id: userId,
+  });
 
-    const currentCount =
-      typeof current.data?.thank_you_count === 'number' ? current.data.thank_you_count : 0;
-
-    const newCount = currentCount + 1;
-
-    const { data: updated, error: updateError } = await supabase
-      .from('targets')
-      .update({ thank_you_count: newCount })
-      .eq('id', id)
-      .select('id, nickname, thank_you_count, from_id')
-      .single();
-
-    if (updateError) throw new Error(`Failed to increment thank_you_count: ${updateError.message}`);
-
-    return updated as Target;
-  } catch (error) {
-    console.error('Error incrementing thank_you_count:', error);
-    throw error;
+  if (error) {
+    throw new Error('감사 수 증가에 실패했습니다.');
   }
+
+  return data as Target;
 }
 
 export async function decrementThankYouCount(id: string): Promise<Target> {
-  try {
-    const current = await supabase.from('targets').select('thank_you_count').eq('id', id).single();
+  const { supabase, userId } = await requireCurrentUserId();
 
-    if (current.error) {
-      throw new Error(`Failed to read current count: ${current.error.message}`);
-    }
+  const { data, error } = await supabase.rpc('decrement_thank_you_count', {
+    target_id: id,
+    owner_id: userId,
+  });
 
-    const currentCount =
-      typeof current.data?.thank_you_count === 'number' ? current.data.thank_you_count : 0;
-
-    const newCount = Math.max(0, currentCount - 1);
-
-    const { data: updated, error: updateError } = await supabase
-      .from('targets')
-      .update({ thank_you_count: newCount })
-      .eq('id', id)
-      .select('id, nickname, thank_you_count, from_id')
-      .single();
-
-    if (updateError) throw new Error(`Failed to decrement thank_you_count: ${updateError.message}`);
-
-    return updated as Target;
-  } catch (error) {
-    console.error('Error decrementing thank_you_count:', error);
-    throw error;
+  if (error) {
+    throw new Error('감사 수 감소에 실패했습니다.');
   }
+
+  return data as Target;
 }

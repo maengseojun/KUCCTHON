@@ -1,80 +1,89 @@
 'use server';
 
 import {
-  insertTarget,
+  deleteTargetById,
+  getTargets,
   incrementThankYouCount,
   decrementThankYouCount,
-  deleteTargetById,
-  getTargetsByFromId,
-  type Target,
+  insertTarget,
 } from '@/lib/queries/targets';
+import { TARGET_TYPES, type CreateTargetInput, type Target, type TargetType } from '@/types/target';
 
 export type TargetActionResult = {
   error: string | null;
-  data?: Target | Target[];
+  data?: Target;
 };
 
-function validateCreateInput(
-  id: string,
-  nickname: string,
-  from_id: string
-): { id: string; nickname: string; from_id: string } | TargetActionResult {
-  if (typeof id !== 'string' || id.trim() === '') {
-    return { error: '아이디를 입력해 주세요.' };
-  }
-
-  if (typeof nickname !== 'string' || nickname.trim() === '') {
-    return { error: '닉네임을 입력해 주세요.' };
-  }
-
-  if (typeof from_id !== 'string' || from_id.trim() === '') {
-    return { error: '출처 아이디를 입력해 주세요.' };
-  }
-
-  return { id: id.trim(), nickname: nickname.trim(), from_id: from_id.trim() };
+function readString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === 'string' ? value.trim() : '';
 }
 
-function validateId(id: string): { id: string } | TargetActionResult {
-  if (typeof id !== 'string' || id.trim() === '') {
-    return { error: '대상 아이디를 입력해 주세요.' };
-  }
-
-  return { id: id.trim() };
+function isTargetType(value: string): value is TargetType {
+  return TARGET_TYPES.includes(value as TargetType);
 }
 
-export async function createTarget(id: string, nickname: string, from_id: string): Promise<TargetActionResult> {
-  const validated = validateCreateInput(id, nickname, from_id);
+function validateCreateTargetInput(formData: FormData): CreateTargetInput | TargetActionResult {
+  const name = readString(formData, 'name');
+  const type = readString(formData, 'type');
+  const memo = readString(formData, 'memo');
 
-  if ('error' in validated) return validated;
+  if (!name) {
+    return { error: '감사 대상 이름을 입력해 주세요.' };
+  }
+
+  if (!isTargetType(type)) {
+    return { error: '감사 대상 유형을 선택해 주세요.' };
+  }
+
+  return {
+    name,
+    type,
+    memo: memo || null,
+  };
+}
+
+export async function fetchTargets(): Promise<Target[]> {
+  return getTargets();
+}
+
+export async function createTarget(formData: FormData): Promise<TargetActionResult> {
+  const validated = validateCreateTargetInput(formData);
+
+  if ('error' in validated) {
+    return validated;
+  }
 
   try {
-    const data = await insertTarget(validated.id, validated.nickname, validated.from_id);
+    const data = await insertTarget(validated);
     return { error: null, data };
   } catch {
-    return { error: '대상 생성에 실패했습니다.' };
+    return { error: '감사 대상 저장에 실패했습니다.' };
   }
 }
 
-export async function fetchTargetsByFromId(from_id: string): Promise<TargetActionResult> {
-  if (typeof from_id !== 'string' || from_id.trim() === '') {
-    return { error: 'from_id를 입력해 주세요.' };
+export async function deleteTarget(formData: FormData): Promise<TargetActionResult> {
+  const id = readString(formData, 'id');
+
+  if (!id) {
+    return { error: '삭제할 감사 대상을 찾지 못했습니다.' };
   }
 
   try {
-    const data = await getTargetsByFromId(from_id.trim());
-    return { error: null, data: data[0] ? data : [] };
+    await deleteTargetById(id);
+    return { error: null };
   } catch {
-    return { error: 'from_id 기준 대상 목록을 불러오지 못했습니다.' };
+    return { error: '감사 대상 삭제에 실패했습니다.' };
   }
 }
 
 export async function incrementTargetCount(id: string): Promise<TargetActionResult> {
-  const validated = validateId(id);
-
-  if ('error' in validated) return validated;
+  if (!id || typeof id !== 'string') {
+    return { error: '대상 ID가 필요합니다.' };
+  }
 
   try {
-    const data = await incrementThankYouCount(validated.id);
+    const data = await incrementThankYouCount(id.trim());
     return { error: null, data };
   } catch {
     return { error: '감사 수 증가에 실패했습니다.' };
@@ -82,27 +91,14 @@ export async function incrementTargetCount(id: string): Promise<TargetActionResu
 }
 
 export async function decrementTargetCount(id: string): Promise<TargetActionResult> {
-  const validated = validateId(id);
-
-  if ('error' in validated) return validated;
+  if (!id || typeof id !== 'string') {
+    return { error: '대상 ID가 필요합니다.' };
+  }
 
   try {
-    const data = await decrementThankYouCount(validated.id);
+    const data = await decrementThankYouCount(id.trim());
     return { error: null, data };
   } catch {
     return { error: '감사 수 감소에 실패했습니다.' };
-  }
-}
-
-export async function deleteTarget(id: string): Promise<TargetActionResult> {
-  const validated = validateId(id);
-
-  if ('error' in validated) return validated;
-
-  try {
-    await deleteTargetById(validated.id);
-    return { error: null };
-  } catch {
-    return { error: '대상 삭제에 실패했습니다.' };
   }
 }
