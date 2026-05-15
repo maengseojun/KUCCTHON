@@ -392,7 +392,29 @@ export default function WritePage() {
                   {selectedDate.getMonth() + 1}월 {selectedDate.getDate()}일
                 </p>
               </div>
-            ) : modalMode === 'anniversary' ? (
+            ) : modalMode === 'delete' ? (
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <div style={{ fontSize: '3rem', marginBottom: 16 }}>⚠️</div>
+            <h2 style={{ color: 'var(--accent-strong)', marginBottom: 8 }}>정말 삭제하시겠습니까?</h2>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 24 }}>삭제된 기록은 복구할 수 없습니다.</p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={closeModal} 
+                style={{ flex: 1, background: 'var(--surface-strong)', color: 'var(--foreground)', border: '1px solid var(--border)', padding: '12px', borderRadius: '12px' }}
+              >
+                아니오
+              </button>
+              <button 
+                onClick={() => {
+                  handleDelete(); // 실제 삭제 함수 이름에 맞춰 수정하세요 (예: deleteRecord 등)
+                }} 
+                style={{ flex: 1, background: '#ff4d4f', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 'bold' }}
+              >
+                예, 삭제합니다
+              </button>
+            </div>
+          </div>
+        ) : modalMode === 'anniversary' ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                   <div>
