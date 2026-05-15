@@ -303,7 +303,7 @@ export default function WritePage() {
               href="/events/new"
               style={{ fontSize: '0.875rem', color: 'var(--accent)', textDecoration: 'none' }}
             >
-              + 기념일 등록
+              + 작성하기
             </Link>
           </h3>
 
