@@ -46,7 +46,6 @@ export default async function Page() {
   const upcomingEvent = findUpcomingEvent(todayKey, targets, events);
   const targetById = new Map(targets.map((target) => [target.id, target]));
   const recentThankYous = thankYous.slice(0, 2);
-  const writeHref = '/write';
   const eventHref = targets.length > 0 ? '/events/new' : '/targets/new';
 
   return (
@@ -87,38 +86,9 @@ export default async function Page() {
 
         <section
           className="activity-list"
-          aria-label="바로가기"
+          aria-label="기념일 바로가기"
           style={{ display: 'grid', gap: 12, marginBottom: 14 }}
         >
-          <div
-            style={{
-              alignItems: 'center',
-              display: 'flex',
-              gap: 12,
-              justifyContent: 'space-between',
-            }}
-          >
-            <div>
-              <p className="panel-label">Write gratitude</p>
-              <h2>감사한 일 작성</h2>
-              <p>오늘 있었던 따뜻한 순간을 바로 기록하세요.</p>
-            </div>
-            <Link href={writeHref} style={{ color: 'inherit', textDecoration: 'none' }}>
-              <span
-                style={{
-                  background: 'var(--accent-strong)',
-                  borderRadius: 999,
-                  color: '#ffffff',
-                  display: 'inline-block',
-                  fontWeight: 700,
-                  padding: '12px 18px',
-                }}
-              >
-                작성하기
-              </span>
-            </Link>
-          </div>
-
           <div
             style={{
               alignItems: 'center',
