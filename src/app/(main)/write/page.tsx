@@ -99,8 +99,8 @@ export default function WritePage() {
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   
-  // 💡 hydration mismatch 방지를 위해 초기값은 빈 객체로 선언하되, loadEntries를 지연 초기화 함수로 사용 가능합니다.
-  const [entries, setEntries] = useState<EntriesMap>({});
+  // 💡 린트 에러 해결 포인트: useState 초기화 함수를 사용하여 마운트 시점에 단 한 번만 실행되도록 격리
+  const [entries, setEntries] = useState<EntriesMap>(() => loadEntries());
   const [hydrated, setHydrated] = useState(false);
 
   // Modal
@@ -109,8 +109,8 @@ export default function WritePage() {
   const [formContent, setFormContent] = useState('');
   const [saved, setSaved] = useState(false);
 
+  // 💡 useEffect 내부의 동기적 setEntries 호출을 제거하여 린트 경고 및 리렌더링 버그 차단
   useEffect(() => {
-    setEntries(loadEntries());
     setHydrated(true);
   }, []);
 
@@ -153,7 +153,6 @@ export default function WritePage() {
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
 
-  // 💡 정상적으로 상단에서 import 완료됨
   const entryCount = useCallback(
     (d: number) => (entries[`${year}-${month + 1}-${d}`] ?? []).length,
     [entries, year, month]
@@ -389,7 +388,7 @@ export default function WritePage() {
           )}
         </section>
 
-        {/* 💡 복구된 Quick compose 기능 섹션 (openModal 활성화) */}
+        {/* Quick compose */}
         <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
           <div>
             <p className="panel-label">오늘의 감사</p>
