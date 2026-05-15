@@ -44,7 +44,12 @@ export async function insertThankYou(
 
   const { data, error } = await supabase
     .from('thank-yous')
-    .insert({ from_id, to_id, content })
+    .insert({
+      from_id,
+      to_id,
+      date: new Date().toISOString().split('T')[0],
+      content,
+    })
     .select(SELECT_COLUMNS)
     .single();
 
@@ -82,6 +87,7 @@ export async function insertThankYouForTarget(
       from_id: userId,
       to_id: null,
       target_id: targetId,
+      date: new Date().toISOString().split('T')[0],
       content,
     })
     .select(SELECT_COLUMNS)
