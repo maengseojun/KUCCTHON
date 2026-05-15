@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, type TouchEvent } from 'react';
+import { useState, useCallback, type TouchEvent } from 'react';
 import NextLink from 'next/link';
+import dynamic from 'next/dynamic';
 import { BottomNav } from '@/components/nav/bottom-nav';
 
 // ── Types ──
@@ -85,7 +86,6 @@ function getNextId(map: EntriesMap): number {
   return max + 1;
 }
 
-// 3-level: light (1) → medium (2) → dark (3+)
 function activityLevel(count: number): string {
   if (count <= 0) return '';
   if (count === 1) return 'activity-light';
@@ -93,26 +93,21 @@ function activityLevel(count: number): string {
   return 'activity-dark';
 }
 
-export default function WritePage() {
+// ── 메인 컴포넌트 내부 로직 ──
+function WritePageContent() {
   const now = new Date();
   const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
   
-  // 💡 린트 에러 해결 포인트: useState 초기화 함수를 사용하여 마운트 시점에 단 한 번만 실행되도록 격리
+  // 지연 초기화를 통해 클라이언트 사이드 로컬스토리지를 바로 바인딩합니다.
   const [entries, setEntries] = useState<EntriesMap>(() => loadEntries());
-  const [hydrated, setHydrated] = useState(false);
 
-  // Modal
+  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [formTarget, setFormTarget] = useState('');
   const [formContent, setFormContent] = useState('');
   const [saved, setSaved] = useState(false);
-
-  // 💡 useEffect 내부의 동기적 setEntries 호출을 제거하여 린트 경고 및 리렌더링 버그 차단
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
 
   const year = baseDate.getFullYear();
   const month = baseDate.getMonth();
@@ -184,16 +179,6 @@ export default function WritePage() {
     setSaved(true);
     setTimeout(() => setShowModal(false), 800);
   };
-
-  if (!hydrated) {
-    return (
-      <main className="demo-stage">
-        <section className="phone-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
-        </section>
-      </main>
-    );
-  }
 
   return (
     <main className="demo-stage" aria-label="감사 일기 작성">
@@ -277,7 +262,7 @@ export default function WritePage() {
           </div>
         </section>
 
-        {/* Selected-day entries – notebook style from main */}
+        {/* Selected-day entries */}
         <section style={{ padding: '0 20px', flex: 1, overflowY: 'auto' }}>
           <h3
             style={{
@@ -529,3 +514,15 @@ export default function WritePage() {
     </main>
   );
 }
+
+// 💡 핵심 린트 에러 파쇄구간: useEffect를 제거하는 대신 컴포넌트를 SSR 단계에서 제외하고 클라이언트 브라우저 로드 시점에만 바인딩합니다.
+export default dynamic(() => Promise.resolve(WritePageContent), {
+  ssr: false,
+  loading: () => (
+    <main className="demo-stage">
+      <section className="phone-shell" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--muted)' }}>로딩 중...</p>
+      </section>
+    </main>
+  ),
+});
