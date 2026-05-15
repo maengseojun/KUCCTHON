@@ -29,9 +29,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+input,
+select,
+textarea {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .demo-stage {
   display: grid;
-  min-height: 100vh;
+  min-height: 100dvh;
   place-items: center;
   padding: 20px;
 }
@@ -40,7 +48,7 @@ body {
   position: relative;
   display: flex;
   width: min(100%, 430px);
-  min-height: min(820px, calc(100vh - 40px));
+  min-height: min(820px, calc(100dvh - 40px));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -211,7 +219,7 @@ button {
   }
 
   .phone-shell {
-    min-height: 100vh;
+    min-height: 100dvh;
     border: 0;
     border-radius: 0;
   }
