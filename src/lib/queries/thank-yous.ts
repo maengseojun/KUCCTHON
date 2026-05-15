@@ -15,7 +15,7 @@ export interface ThankYou {
 export async function getThankYouList(): Promise<ThankYou[]> {
   try {
     const { data, error } = await supabase
-      .from('thank_yous')
+      .from('thank-yous')
       .select('from_id, to_id, created_at, content')
       .order('created_at', { ascending: false });
 
@@ -37,7 +37,7 @@ export async function insertThankYou(
 ): Promise<ThankYou> {
   try {
     const { data, error } = await supabase
-      .from('thank_yous')
+      .from('thank-yous')
       .insert({
         from_id,
         to_id,
