@@ -180,7 +180,7 @@ export default function WritePage() {
               href="/events/new"
               style={{ fontSize: '0.875rem', color: 'var(--accent)', textDecoration: 'none' }}
             >
-              + 기념일 등록
+              + 작성하기
             </Link>
           </h3>
 
@@ -227,15 +227,6 @@ export default function WritePage() {
               작성된 감사 일기가 없습니다.
             </div>
           )}
-        </section>
-
-        {/* ── Quick compose ── */}
-        <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
-          <div>
-            <p className="panel-label">오늘의 감사</p>
-            <h2 style={{ fontSize: '1.125rem' }}>오늘 감사한 일을 적어보세요</h2>
-          </div>
-          <button type="button">작성</button>
         </section>
 
         <BottomNav active="write" />
