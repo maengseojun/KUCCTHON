@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type TouchEvent } from 'react';
+import { useState, useEffect, useCallback, type TouchEvent } from 'react';
 import NextLink from 'next/link';
 import { BottomNav } from '@/components/nav/bottom-nav';
 
@@ -98,6 +98,8 @@ export default function WritePage() {
   const [baseDate, setBaseDate] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(now);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  
+  // 💡 hydration mismatch 방지를 위해 초기값은 빈 객체로 선언하되, loadEntries를 지연 초기화 함수로 사용 가능합니다.
   const [entries, setEntries] = useState<EntriesMap>({});
   const [hydrated, setHydrated] = useState(false);
 
@@ -108,7 +110,6 @@ export default function WritePage() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEntries(loadEntries());
     setHydrated(true);
   }, []);
@@ -152,6 +153,7 @@ export default function WritePage() {
   const isToday = (d: number) =>
     d === now.getDate() && month === now.getMonth() && year === now.getFullYear();
 
+  // 💡 정상적으로 상단에서 import 완료됨
   const entryCount = useCallback(
     (d: number) => (entries[`${year}-${month + 1}-${d}`] ?? []).length,
     [entries, year, month]
@@ -387,7 +389,14 @@ export default function WritePage() {
           )}
         </section>
 
-
+        {/* 💡 복구된 Quick compose 기능 섹션 (openModal 활성화) */}
+        <section className="quick-compose" style={{ margin: 16, marginTop: 'auto' }}>
+          <div>
+            <p className="panel-label">오늘의 감사</p>
+            <h2 style={{ fontSize: '1.125rem' }}>오늘 감사한 일을 적어보세요</h2>
+          </div>
+          <button type="button" onClick={openModal}>작성</button>
+        </section>
 
         <BottomNav active="write" />
       </section>
