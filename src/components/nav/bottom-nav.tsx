@@ -7,11 +7,11 @@ type BottomNavProps = {
 };
 
 const items: Array<{ key: BottomNavItem; href: string; label: string }> = [
-  { key: 'home', href: '/', label: 'Home' },
-  { key: 'write', href: '/write', label: 'Write' },
-  { key: 'friends', href: '/friends', label: 'Friends' },
-  { key: 'targets', href: '/targets', label: 'Targets' },
-  { key: 'mypage', href: '/mypage', label: 'My' },
+  { key: 'home', href: '/', label: '홈' },
+  { key: 'write', href: '/write', label: '작성하기' },
+  { key: 'friends', href: '/friends', label: '친구 추가' },
+  { key: 'targets', href: '/targets', label: '기념일 추가' },
+  { key: 'mypage', href: '/mypage', label: '내 계정' },
 ];
 
 export function BottomNav({ active }: BottomNavProps) {
