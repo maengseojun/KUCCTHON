@@ -11,7 +11,7 @@ export interface ThankYou {
   created_at: string;
   content: string;
 }
-
+/*
 export async function getThankYouList(): Promise<ThankYou[]> {
   try {
     const { data, error } = await supabase
@@ -29,6 +29,7 @@ export async function getThankYouList(): Promise<ThankYou[]> {
     throw error;
   }
 }
+*/
 
 export async function insertThankYou(
   from_id: string,
@@ -53,6 +54,25 @@ export async function insertThankYou(
     return data;
   } catch (error) {
     console.error('Error inserting thank you:', error);
+    throw error;
+  }
+}
+
+export async function getThankYousByFromId(from_id: string): Promise<ThankYou[]> {
+  try {
+    const { data, error } = await supabase
+      .from('thank-yous')
+      .select('from_id, to_id, created_at, content')
+      .eq('from_id', from_id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Failed to fetch thank yous for from_id=${from_id}: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching thank yous by from_id:', error);
     throw error;
   }
 }
