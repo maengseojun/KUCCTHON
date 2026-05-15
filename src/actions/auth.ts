@@ -112,6 +112,10 @@ function getSignupErrorMessage(message: string) {
     return '이미 가입된 이메일입니다. 로그인해 주세요.';
   }
 
+  if (lowerMessage.includes('unique') || lowerMessage.includes('duplicate')) {
+    return '이미 사용 중인 이름입니다. 다른 이름을 입력해 주세요.';
+  }
+
   if (lowerMessage.includes('password')) {
     return '비밀번호는 6자 이상으로 입력해 주세요.';
   }
